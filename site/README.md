@@ -73,7 +73,7 @@ un autre domaine, remplacez-le partout en une commande :
 grep -rl 'baobablabs.cm' site/ | xargs sed -i 's/baobablabs\.cm/votre-domaine.cm/g'
 ```
 
-### 3. Créer la boîte contact@ — et trancher l'incohérence avec Facebook
+### 3. Créer la boîte contact@
 
 L'adresse `contact@baobablabs.cm` est affichée en page d'accueil, dans les mentions
 légales et dans la politique de confidentialité. **Elle doit exister et être relevée
@@ -81,21 +81,19 @@ avant de soumettre le dossier Meta Business** : une adresse affichée mais inact
 est un motif de rejet. Si vous préférez une autre adresse, remplacez-la de la même
 manière que le domaine.
 
-**Incohérence à lever avant la soumission Meta** : la page Facebook Baobab Labs
-affiche `baobablabs.officiel@gmail.com` comme adresse de contact, alors que le site
-affiche `contact@baobablabs.cm`. Meta compare ces informations d'une source à
-l'autre. Alignez les deux : soit la page Facebook adopte l'adresse du domaine, soit
-le site reprend l'adresse Gmail — la première option est nettement plus solide face
-aux partenaires bancaires.
+**Concordance avec la page Facebook.** Les informations affichées sur le site et sur
+la page Facebook Baobab Labs sont alignées — Meta recoupe ces sources entre elles :
 
-De la même façon, la page Facebook affiche `+237 6 75 68 32 47` en téléphone et
-`+237 6 80 55 41 32` en WhatsApp ; le site n'affiche que le second. Ce n'est pas une
-contradiction, mais vérifiez que le numéro de téléphone déclaré dans le portefeuille
-Meta Business correspond bien à l'un des deux.
+| Donnée | Site | Page Facebook |
+| --- | --- | --- |
+| Adresse de contact | `contact@baobablabs.cm` | `contact@baobablabs.cm` |
+| Téléphone | `+237 6 75 68 32 47` | `+237 6 75 68 32 47` |
+| WhatsApp Business | `+237 6 80 55 41 32` | `+237 6 80 55 41 32` |
+| Adresse | Biyem-Assi, Yaoundé, Cameroun | Biyem-assi, Yaoundé, Cameroon |
 
-Enfin, les profils sociaux indiquent « Douala, Cameroun » tandis que le siège
-enregistré au RCCM est à Biyem-Assi, Yaoundé. Le site affiche le siège légal, ce qui
-est correct ; l'adresse déclarée dans Meta Business doit être celle du RCCM.
+Les numéros sont écrits selon le même découpage que sur Facebook, volontairement.
+Toute modification d'un côté doit être répercutée de l'autre, ainsi que dans le
+portefeuille Meta Business.
 
 ---
 
