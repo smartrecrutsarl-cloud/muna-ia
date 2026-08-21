@@ -99,16 +99,52 @@ portefeuille Meta Business.
 
 ## Déploiement sur Netlify
 
-Le site est publié depuis ce dépôt ; aucune commande de build n'est exécutée.
+Le projet Netlify est **déjà créé** et attend son premier déploiement :
 
-1. Netlify → **Add new site** → **Import an existing project** → ce dépôt GitHub.
-2. Branche à publier : celle de votre choix (`main` une fois la revue faite).
+| | |
+| --- | --- |
+| Projet | `baobab-labs` |
+| Équipe | `vendly-officiel` |
+| Identifiant | `7e384df0-d219-4ae6-96cd-45fa45df4310` |
+| Administration | https://app.netlify.com/projects/baobab-labs |
+| URL une fois déployé | https://baobab-labs.netlify.app |
+
+Le site est publié depuis ce dépôt ; aucune commande de build n'est exécutée.
+Deux façons de procéder.
+
+### Option A — lier le dépôt GitHub (recommandé)
+
+Chaque `git push` redéploie automatiquement. C'est la mise en place à privilégier
+sur la durée.
+
+1. https://app.netlify.com/projects/baobab-labs → **Project configuration** →
+   **Build & deploy** → **Link repository** → ce dépôt GitHub.
+2. Branche de production : `main` une fois la revue faite, ou
+   `claude/baobab-labs-website-q5sm89` pour publier immédiatement.
 3. Les réglages sont lus depuis `netlify.toml` — laissez les champs *Build command*
    et *Publish directory* tels que proposés :
    - build command : vide
    - publish directory : `site`
 4. **Domain settings** → ajoutez le domaine et activez le HTTPS (certificat
    Let's Encrypt automatique).
+
+Le dépôt contenant aussi le backend MUNA IA, Netlify détectera le `package.json`
+de la racine et installera ses dépendances avant de constater qu'aucune commande de
+build n'est définie. C'est inoffensif, seulement un peu lent. Pour l'éviter, vous
+pouvez remplacer le bloc `[build]` de `netlify.toml` par `base = "site"` et
+`publish = "."` — à valider par un déploiement de test, la construction du site
+n'ayant pas pu être exercée depuis l'environnement de développement.
+
+### Option B — déploiement direct depuis votre machine
+
+Ponctuel, sans lier le dépôt. À exécuter à la racine du dépôt :
+
+```bash
+npx -y @netlify/mcp@latest --site-id 7e384df0-d219-4ae6-96cd-45fa45df4310
+```
+
+La commande téléverse le dépôt et le construit chez Netlify. Ajoutez `--no-wait`
+pour ne pas attendre la fin du déploiement.
 
 ### Formulaire de contact
 
