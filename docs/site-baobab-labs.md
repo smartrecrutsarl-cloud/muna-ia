@@ -66,17 +66,43 @@ fichier, en conservant ce nom. Aucune autre modification n'est nécessaire.
   tailles (16–32 px), où le réseau de nœuds complet devient illisible. À adapter si
   vous disposez d'une déclinaison officielle pour ces tailles.
 
-### 2. Fixer le domaine
+### 2. Brancher le domaine
 
-Le domaine `baobablabs.cm` est utilisé comme valeur par défaut dans les URL
-canoniques, les balises Open Graph, `sitemap.xml` et `robots.txt`. Si vous retenez
-un autre domaine, remplacez-le partout en une commande :
+`baobablabs.cm` est enregistré chez **Camoo Hosting** (échéance 21 août 2027) et
+utilisé dans les URL canoniques, les balises Open Graph, `sitemap.xml` et
+`robots.txt`. Aucune modification du site n'est nécessaire : seul le DNS reste à
+faire.
+
+> **Ne basculez pas les serveurs de noms vers Netlify.** Le panneau Camoo propose
+> « Nom de serveur (DNS) » ; en confier la gestion à Netlify supprimerait les
+> enregistrements MX de la messagerie Camoo, et `contact@baobablabs.cm` cesserait
+> de fonctionner. Gardez les serveurs de noms Camoo et ajoutez-y simplement deux
+> enregistrements.
+
+Dans l'ordre :
+
+1. **Camoo → E-mails Professionnelles** : créer la boîte `contact@baobablabs.cm`.
+   À faire en premier — c'est ce qui met en place les enregistrements MX.
+2. **Netlify → Domain management → Add a domain** : `baobablabs.cm`. Netlify
+   affiche alors les enregistrements DNS exacts à créer.
+3. **Camoo → zone DNS** : ajouter ce que Netlify a indiqué, soit en principe
+   - un enregistrement `A` sur l'apex (`@`) vers l'adresse IP du répartiteur
+     Netlify — actuellement `75.2.60.5`, mais **recopiez la valeur affichée par
+     Netlify** plutôt que celle-ci ;
+   - un enregistrement `CNAME` sur `www` vers `baobab-labs.netlify.app`.
+4. Attendre la propagation (quelques minutes à quelques heures). Netlify
+   provisionne ensuite tout seul le certificat Let's Encrypt.
+5. **Netlify → Domain management** : définir `baobablabs.cm` comme domaine
+   principal. `baobab-labs.netlify.app` redirigera vers lui, ce qui évite d'avoir
+   deux adresses indexées pour le même contenu.
+
+Si le domaine devait changer, tout se remplace en une commande :
 
 ```bash
 grep -rl 'baobablabs.cm' site/ | xargs sed -i 's/baobablabs\.cm/votre-domaine.cm/g'
 ```
 
-### 3. Créer la boîte contact@
+### 3. La boîte contact@
 
 L'adresse `contact@baobablabs.cm` est affichée en page d'accueil, dans les mentions
 légales et dans la politique de confidentialité. **Elle doit exister et être relevée
