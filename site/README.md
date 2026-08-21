@@ -73,13 +73,29 @@ un autre domaine, remplacez-le partout en une commande :
 grep -rl 'baobablabs.cm' site/ | xargs sed -i 's/baobablabs\.cm/votre-domaine.cm/g'
 ```
 
-### 3. Créer la boîte contact@
+### 3. Créer la boîte contact@ — et trancher l'incohérence avec Facebook
 
 L'adresse `contact@baobablabs.cm` est affichée en page d'accueil, dans les mentions
 légales et dans la politique de confidentialité. **Elle doit exister et être relevée
 avant de soumettre le dossier Meta Business** : une adresse affichée mais inactive
 est un motif de rejet. Si vous préférez une autre adresse, remplacez-la de la même
 manière que le domaine.
+
+**Incohérence à lever avant la soumission Meta** : la page Facebook Baobab Labs
+affiche `baobablabs.officiel@gmail.com` comme adresse de contact, alors que le site
+affiche `contact@baobablabs.cm`. Meta compare ces informations d'une source à
+l'autre. Alignez les deux : soit la page Facebook adopte l'adresse du domaine, soit
+le site reprend l'adresse Gmail — la première option est nettement plus solide face
+aux partenaires bancaires.
+
+De la même façon, la page Facebook affiche `+237 6 75 68 32 47` en téléphone et
+`+237 6 80 55 41 32` en WhatsApp ; le site n'affiche que le second. Ce n'est pas une
+contradiction, mais vérifiez que le numéro de téléphone déclaré dans le portefeuille
+Meta Business correspond bien à l'un des deux.
+
+Enfin, les profils sociaux indiquent « Douala, Cameroun » tandis que le siège
+enregistré au RCCM est à Biyem-Assi, Yaoundé. Le site affiche le siège légal, ce qui
+est correct ; l'adresse déclarée dans Meta Business doit être celle du RCCM.
 
 ---
 
@@ -151,6 +167,33 @@ Ces contraintes ont guidé la rédaction ; les conserver en cas de modification.
 - **Mentions légales inchangées** : `ETS BAOBAB LABS`,
   `RCCM CM-NSI-01-2026-A10-01729`, `NIU P040117214047C`,
   `Biyem-Assi, Yaoundé, Cameroun`.
+
+## Réseaux sociaux
+
+Les liens pointent vers les profils (et non vers une publication), à trois endroits :
+la section contact, le bloc réseaux du pied de page, et le champ `sameAs` du JSON-LD
+`Organization` — c'est ce dernier qui rattache officiellement les profils à la
+société pour les outils de vérification.
+
+| Réseau | Compte | Remarque |
+| --- | --- | --- |
+| Instagram | `@baobab.labs.officiel` | Compte actif, alimenté. |
+| TikTok | `@vendly.cm` | Voir la réserve ci-dessous. |
+| Facebook | — | Non référencé : l'URL de la page n'a pas été fournie. |
+
+**Réserve sur le compte TikTok.** Il porte le nom d'affichage « BAOBAB LABS » mais
+son identifiant est `@vendly.cm`, sa biographie décrit Vendly (« Ta boutique répond
+et vend sur WhatsApp ») et il ne comptait aucune publication ni aucun abonné au
+moment de l'intégration. Deux problèmes sur un site dont l'objet est d'établir la
+crédibilité de la société mère : c'est un compte **produit** et non un compte
+d'entreprise, et un profil vide dessert davantage qu'il ne sert. Il a sa place sur
+vendly.cm, pas ici. Retirez-le du bloc réseaux et du `sameAs` tant qu'il n'est pas
+alimenté, ou laissez-le si vous préférez assumer la présence.
+
+**Facebook manque.** C'est le réseau le plus utile ici : la page est rattachée au
+portefeuille Meta Business, et la faire figurer dans le `sameAs` renforce
+directement le dossier de vérification. Ajoutez l'URL de la page dès que vous
+l'avez, aux trois mêmes endroits.
 
 ## Points à faire valider
 
