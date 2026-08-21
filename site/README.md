@@ -175,20 +175,23 @@ la section contact, le bloc réseaux du pied de page, et le champ `sameAs` du JS
 `Organization` — c'est ce dernier qui rattache officiellement les profils à la
 société pour les outils de vérification.
 
-| Réseau | Compte | Remarque |
+| Réseau | Compte | Statut |
 | --- | --- | --- |
-| Instagram | `@baobab.labs.officiel` | Compte actif, alimenté. |
-| TikTok | `@vendly.cm` | Voir la réserve ci-dessous. |
+| Instagram | `@baobab.labs.officiel` | Référencé. |
+| TikTok | `@vendly.cm` | Retiré du site — voir ci-dessous. |
 | Facebook | — | Non référencé : l'URL de la page n'a pas été fournie. |
 
-**Réserve sur le compte TikTok.** Il porte le nom d'affichage « BAOBAB LABS » mais
-son identifiant est `@vendly.cm`, sa biographie décrit Vendly (« Ta boutique répond
-et vend sur WhatsApp ») et il ne comptait aucune publication ni aucun abonné au
-moment de l'intégration. Deux problèmes sur un site dont l'objet est d'établir la
-crédibilité de la société mère : c'est un compte **produit** et non un compte
-d'entreprise, et un profil vide dessert davantage qu'il ne sert. Il a sa place sur
-vendly.cm, pas ici. Retirez-le du bloc réseaux et du `sameAs` tant qu'il n'est pas
-alimenté, ou laissez-le si vous préférez assumer la présence.
+**TikTok a été retiré.** Le compte porte le nom d'affichage « BAOBAB LABS » mais son
+identifiant est `@vendly.cm`, sa biographie décrit Vendly (« Ta boutique répond et
+vend sur WhatsApp ») et il ne comptait aucune publication ni aucun abonné. C'est un
+compte **produit**, pas un compte d'entreprise, et un profil vide dessert un site
+dont l'objet est d'établir la crédibilité de la société mère. Sa place est sur
+vendly.cm.
+
+Pour le réintégrer une fois alimenté — et sous réserve qu'il soit rebaptisé au nom de
+Baobab Labs — il faut le rétablir aux trois mêmes endroits qu'Instagram : le canal de
+la section contact, la pastille du bloc réseaux du pied de page, et le tableau
+`sameAs` du JSON-LD.
 
 **Facebook manque.** C'est le réseau le plus utile ici : la page est rattachée au
 portefeuille Meta Business, et la faire figurer dans le `sameAs` renforce
