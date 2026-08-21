@@ -73,28 +73,44 @@ utilisé dans les URL canoniques, les balises Open Graph, `sitemap.xml` et
 `robots.txt`. Aucune modification du site n'est nécessaire : seul le DNS reste à
 faire.
 
-> **Ne basculez pas les serveurs de noms vers Netlify.** Le panneau Camoo propose
-> « Nom de serveur (DNS) » ; en confier la gestion à Netlify supprimerait les
-> enregistrements MX de la messagerie Camoo, et `contact@baobablabs.cm` cesserait
-> de fonctionner. Gardez les serveurs de noms Camoo et ajoutez-y simplement deux
-> enregistrements.
+Le DNS doit rester **chez Camoo**, pour une raison contraignante : la messagerie
+professionnelle de Camoo refuse de s'activer si le domaine n'utilise pas leurs
+serveurs de noms (« Vous utilisez des DNS externes. Pour activer ce service, votre
+nom de domaine devrait pointer vers nos serveurs »). Confier le DNS à Netlify
+donnerait un site en ligne mais aucune adresse `@baobablabs.cm`.
 
-Dans l'ordre :
+Le site s'accommode très bien de ce choix : Netlify n'a pas besoin d'héberger le
+DNS, deux enregistrements dans la zone Camoo suffisent.
 
-1. **Camoo → E-mails Professionnelles** : créer la boîte `contact@baobablabs.cm`.
-   À faire en premier — c'est ce qui met en place les enregistrements MX.
-2. **Netlify → Domain management → Add a domain** : `baobablabs.cm`. Netlify
-   affiche alors les enregistrements DNS exacts à créer.
-3. **Camoo → zone DNS** : ajouter ce que Netlify a indiqué, soit en principe
+Dans l'ordre — l'ordre compte :
+
+1. **Camoo → Domaines → baobablabs.cm → Gérer → Nom de serveur (DNS)** : choisir
+   les serveurs de noms **de Camoo** (l'écran propose ses valeurs par défaut ;
+   n'y saisissez pas ceux de Netlify). C'est le préalable à tout le reste.
+2. Attendre la propagation, puis **Camoo → E-mails Professionnelles** : le bandeau
+   d'erreur doit avoir disparu et le statut du domaine passer à *Actif*. Créer
+   alors `contact@baobablabs.cm`.
+3. **Netlify → Domain management → Add a domain** : `baobablabs.cm`. Netlify
+   affiche les enregistrements DNS exacts à créer.
+4. **Camoo → zone DNS du domaine** : ajouter ce que Netlify a indiqué, soit en
+   principe
    - un enregistrement `A` sur l'apex (`@`) vers l'adresse IP du répartiteur
      Netlify — actuellement `75.2.60.5`, mais **recopiez la valeur affichée par
      Netlify** plutôt que celle-ci ;
    - un enregistrement `CNAME` sur `www` vers `baobab-labs.netlify.app`.
-4. Attendre la propagation (quelques minutes à quelques heures). Netlify
-   provisionne ensuite tout seul le certificat Let's Encrypt.
-5. **Netlify → Domain management** : définir `baobablabs.cm` comme domaine
+
+   Ne touchez pas aux enregistrements `MX` créés à l'étape 2 : ce sont eux qui
+   acheminent le courrier.
+5. Attendre la propagation. Netlify provisionne ensuite tout seul le certificat
+   Let's Encrypt.
+6. **Netlify → Domain management** : définir `baobablabs.cm` comme domaine
    principal. `baobab-labs.netlify.app` redirigera vers lui, ce qui évite d'avoir
    deux adresses indexées pour le même contenu.
+
+Si la zone DNS de Camoo n'autorisait pas un enregistrement `A` sur l'apex vers une
+IP externe, le repli est d'héberger le courrier ailleurs (Zoho Mail, Google
+Workspace) et de confier le DNS à Netlify, en y recréant les `MX` du nouveau
+fournisseur.
 
 Si le domaine devait changer, tout se remplace en une commande :
 
