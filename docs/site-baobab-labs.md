@@ -169,12 +169,27 @@ Ajoutez `--no-wait` pour ne pas attendre la fin du déploiement.
 
 ### Formulaire de contact
 
-Le formulaire utilise **Netlify Forms** : il est détecté automatiquement au
-déploiement, sans code serveur.
+Le formulaire utilise **Netlify Forms** : aucun code serveur, mais l'ordre des
+opérations compte.
 
-- Après le premier déploiement : **Forms** → formulaire `contact` → **Settings and
-  usage** → **Form notifications** → ajoutez une notification par e-mail vers
-  l'adresse qui doit recevoir les demandes.
+> **Activez Forms _avant_ de déployer.** La détection des formulaires s'exécute
+> pendant le déploiement, en analysant le HTML publié. Un déploiement effectué
+> alors que Forms était désactivé ne remonte aucun formulaire — et l'activer
+> ensuite ne rattrape rien : il faut redéployer.
+
+1. **Project configuration** → **Forms** → activer la détection.
+2. Déployer (ou redéployer) le site.
+3. Vérifier que le formulaire `contact` apparaît dans l'onglet **Forms**.
+4. **Forms** → `contact` → **Settings and usage** → **Form notifications** →
+   **Add notification** → *Email notification* → saisir l'adresse destinataire.
+
+Sans l'étape 4, les messages sont bien enregistrés chez Netlify mais personne
+n'est prévenu de leur arrivée. Renseignez une adresse **déjà relevée** : pointer
+la notification vers `contact@baobablabs.cm` avant que la boîte n'existe revient
+à perdre les demandes.
+
+Autres points :
+
 - Un champ piège (*honeypot*) `societe-web`, invisible pour les visiteurs, filtre
   les robots.
 - Après envoi, le visiteur est redirigé vers `/merci.html`.
