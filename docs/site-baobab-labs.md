@@ -32,15 +32,18 @@ site/
 ├── 404.html
 ├── robots.txt
 ├── sitemap.xml
-├── assets/
+└── assets/
 │   ├── css/styles.css
 │   ├── js/main.js          En-tête au défilement, révélations, constellation du hero
 │   ├── fonts/              Unbounded 900 + Space Grotesk 400–700 (sous-ensembles latin)
 │   └── img/                logo-baobab.svg, favicon.svg, og-image.png, apple-touch-icon.png
-└── tools/generate-mark.py  Générateur du logo de secours (voir plus bas)
 ```
 
 `netlify.toml` se trouve à la racine du dépôt et publie ce dossier.
+
+Le dossier `site/` ne contient **que des fichiers destinés à être servis** : tout ce
+qui s'y trouve est accessible publiquement une fois déployé. La documentation vit
+dans `docs/`, les utilitaires dans `tools/`, hors du périmètre publié.
 
 ---
 
@@ -135,16 +138,34 @@ pouvez remplacer le bloc `[build]` de `netlify.toml` par `base = "site"` et
 `publish = "."` — à valider par un déploiement de test, la construction du site
 n'ayant pas pu être exercée depuis l'environnement de développement.
 
-### Option B — déploiement direct depuis votre machine
+### Option B — dépôt manuel d'une archive
 
-Ponctuel, sans lier le dépôt. À exécuter à la racine du dépôt :
+Sans lier le dépôt, et sans rien installer. Fabriquez l'archive :
+
+```bash
+./tools/package-site.sh          # produit baobab-labs-site.zip
+```
+
+Puis déposez-la sur https://app.netlify.com/projects/baobab-labs/deploys, dans la
+zone **« Drag and drop your project output folder here »**.
+
+L'archive est construite pour ce mode : `index.html` est à sa racine — Netlify
+publie le contenu de l'archive tel quel, un dossier englobant donnerait un site
+vide — et elle embarque un `netlify.toml` réduit aux en-têtes et aux redirections,
+la section `[build]` du dépôt n'ayant pas de sens ici.
+
+L'archive est un produit de compilation : elle est ignorée par git et se
+régénère à la demande.
+
+### Option C — déploiement direct depuis votre machine
+
+Téléverse le dépôt et le construit chez Netlify. À exécuter à la racine du dépôt :
 
 ```bash
 npx -y @netlify/mcp@latest --site-id 7e384df0-d219-4ae6-96cd-45fa45df4310
 ```
 
-La commande téléverse le dépôt et le construit chez Netlify. Ajoutez `--no-wait`
-pour ne pas attendre la fin du déploiement.
+Ajoutez `--no-wait` pour ne pas attendre la fin du déploiement.
 
 ### Formulaire de contact
 
@@ -179,7 +200,7 @@ Servez bien depuis le dossier `site/` : les chemins sont absolus (`/assets/...`)
 **Logo de secours** — modifie le tracé ; la graine change la disposition du réseau :
 
 ```bash
-python3 site/tools/generate-mark.py site/assets/img/logo-baobab.svg 23
+python3 tools/generate-baobab-mark.py site/assets/img/logo-baobab.svg 23
 ```
 
 **Image de partage social** (`og-image.png`, 1200 × 630) — elle a été produite par

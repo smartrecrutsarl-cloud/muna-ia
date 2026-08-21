@@ -1,0 +1,7 @@
+node_modules/
+.env
+.env.*
+!.env.example
+
+# Archive de déploiement manuel, régénérée par tools/package-site.sh
+baobab-labs-site.zip
