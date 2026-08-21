@@ -177,9 +177,23 @@ société pour les outils de vérification.
 
 | Réseau | Compte | Statut |
 | --- | --- | --- |
+| Facebook | Page « Baobab Labs » | Référencé via un lien de partage — voir ci-dessous. |
 | Instagram | `@baobab.labs.officiel` | Référencé. |
-| TikTok | `@vendly.cm` | Retiré du site — voir ci-dessous. |
-| Facebook | — | Non référencé : l'URL de la page n'a pas été fournie. |
+| TikTok | `@vendly.cm` | Retiré du site — voir plus bas. |
+
+**Remplacer le lien Facebook par son URL canonique.** La page est actuellement
+référencée par `facebook.com/share/1HuwswRakU/`, un lien de partage : une redirection
+opaque, propre au partage, et non l'adresse de la page. Le lien fonctionne, mais deux
+raisons de le remplacer dès que possible :
+
+- le champ `sameAs` sert à rattacher la page à la société pour les outils de
+  vérification ; une redirection y est nettement moins probante qu'une URL de page ;
+- un lien de partage peut être invalidé, contrairement à l'adresse de la page.
+
+L'URL canonique se lit dans la barre d'adresse en ouvrant la page sur ordinateur :
+soit `facebook.com/<nom-utilisateur>`, soit `facebook.com/profile.php?id=<identifiant>`
+si aucun nom d'utilisateur n'a été défini. Remplacez-la aux trois emplacements
+indiqués ci-dessous.
 
 **TikTok a été retiré.** Le compte porte le nom d'affichage « BAOBAB LABS » mais son
 identifiant est `@vendly.cm`, sa biographie décrit Vendly (« Ta boutique répond et
@@ -189,14 +203,16 @@ dont l'objet est d'établir la crédibilité de la société mère. Sa place est
 vendly.cm.
 
 Pour le réintégrer une fois alimenté — et sous réserve qu'il soit rebaptisé au nom de
-Baobab Labs — il faut le rétablir aux trois mêmes endroits qu'Instagram : le canal de
-la section contact, la pastille du bloc réseaux du pied de page, et le tableau
-`sameAs` du JSON-LD.
+Baobab Labs — il faut le rétablir aux trois emplacements décrits ci-dessous.
 
-**Facebook manque.** C'est le réseau le plus utile ici : la page est rattachée au
-portefeuille Meta Business, et la faire figurer dans le `sameAs` renforce
-directement le dossier de vérification. Ajoutez l'URL de la page dès que vous
-l'avez, aux trois mêmes endroits.
+**Les trois emplacements** où figure chaque réseau, dans `index.html` :
+
+1. le canal de la section contact (`<a class="channel">`) ;
+2. la pastille du bloc réseaux du pied de page (`<div class="social">`) ;
+3. le tableau `sameAs` du JSON-LD `Organization`, en tête de page.
+
+Le pied de page des quatre autres pages est une copie de celui d'`index.html` :
+après modification, reportez-y le même bloc.
 
 ## Points à faire valider
 
