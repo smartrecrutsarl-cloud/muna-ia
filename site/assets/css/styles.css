@@ -835,6 +835,33 @@ a.channel:hover .channel__arrow { transform: translate(2px, -2px); color: var(--
   max-width: 34ch;
 }
 
+.social {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem;
+  margin-top: 1.6rem;
+}
+
+.social a {
+  display: inline-flex;
+  align-items: center;
+  font-size: .8125rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: .42rem .9rem;
+  transition: color .25s var(--ease), border-color .25s var(--ease),
+    background .25s var(--ease);
+}
+
+.social a:hover {
+  color: var(--text);
+  border-color: var(--accent);
+  background: var(--surface-hi);
+}
+
 .footer__colhead {
   font-size: .6875rem;
   letter-spacing: .16em;
