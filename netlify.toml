@@ -15,6 +15,11 @@
   to = "/confidentialite.html"
   status = 301
 
+[[redirects]]
+  from = "/vendly-confidentialite"
+  to = "/vendly-confidentialite.html"
+  status = 301
+
 [[headers]]
   for = "/*"
   [headers.values]
