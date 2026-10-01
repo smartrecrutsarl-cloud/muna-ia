@@ -30,18 +30,7 @@ export default defineConfig({
         // Les moteurs WASM sont volumineux : on les met quand même en cache pour le hors-ligne.
         globPatterns: ['**/*.{js,mjs,css,html,svg,png,wasm,data,mp3}'],
         maximumFileSizeToCacheInBytes: 40 * 1024 * 1024,
-        runtimeCaching: [
-          {
-            // Modèles de voix Piper (téléchargés une fois, puis disponibles hors ligne).
-            urlPattern: ({ url }) => url.hostname === 'huggingface.co' || url.hostname.endsWith('.hf.co'),
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'piper-voices',
-              cacheableResponse: { statuses: [0, 200] },
-              rangeRequests: false,
-            },
-          },
-        ],
+        // Les modèles de voix sont gérés par l'application (Cache Storage « piper-voices »).
       },
     }),
   ],

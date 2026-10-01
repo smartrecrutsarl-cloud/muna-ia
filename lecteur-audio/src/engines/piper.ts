@@ -1,4 +1,4 @@
-import { PATH_MAP, voices as listVoices } from '@mintplex-labs/piper-tts-web';
+import { HF_BASE, PATH_MAP, voices as listVoices } from '@mintplex-labs/piper-tts-web';
 import type { Voice as PiperVoice } from '@mintplex-labs/piper-tts-web';
 import { MODEL_CACHE } from './model-cache';
 import { CATALOG, type CatalogVoice } from '../voices';
@@ -29,6 +29,30 @@ const VOICES_BASE = 'https://huggingface.co/rhasspy/piper-voices/resolve/main';
 export function modelUrl(model: string) {
   const [locale, name, quality] = model.split('-');
   return `${VOICES_BASE}/${locale.split('_')[0]}/${locale}/${encodeURIComponent(name)}/${quality}/${encodeURIComponent(model)}.onnx`;
+}
+
+/** Sources de téléchargement, dans l'ordre : dépôt officiel, puis miroir. */
+function modelSources(model: string): string[] {
+  const sources = [modelUrl(model)];
+  if (model in PATH_MAP) sources.push(`${HF_BASE}/${PATH_MAP[model]}`);
+  return sources;
+}
+
+async function fetchWithProgress(url: string, onProgress?: (ratio: number) => void): Promise<Blob> {
+  const res = await fetch(url);
+  if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+  const total = Number(res.headers.get('Content-Length') ?? 0);
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let loaded = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    loaded += value.length;
+    if (total && onProgress) onProgress(loaded / total);
+  }
+  return new Blob(chunks as BlobPart[]);
 }
 
 export interface OtherVoice {
@@ -74,24 +98,21 @@ export async function downloadedModels(): Promise<Set<string>> {
 
 export async function downloadModel(model: string, onProgress: (ratio: number) => void) {
   const cache = await caches.open(MODEL_CACHE);
-  const url = modelUrl(model);
-  const json = await fetch(url + '.json');
-  if (!json.ok) throw new Error(`HTTP ${json.status}`);
-  const res = await fetch(url);
-  if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
-  const total = Number(res.headers.get('Content-Length') ?? 0);
-  const reader = res.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let loaded = 0;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    chunks.push(value);
-    loaded += value.length;
-    if (total) onProgress(loaded / total);
+  const key = modelUrl(model);
+  let lastError: unknown;
+  for (const source of modelSources(model)) {
+    try {
+      const json = await fetchWithProgress(source + '.json');
+      const onnx = await fetchWithProgress(source, onProgress);
+      // Toujours rangé sous l'adresse officielle, quelle que soit la source utilisée.
+      await cache.put(key + '.json', new Response(json, { headers: { 'Content-Type': 'application/json' } }));
+      await cache.put(key, new Response(onnx, { headers: { 'Content-Type': 'application/octet-stream' } }));
+      return;
+    } catch (err) {
+      lastError = err;
+    }
   }
-  await cache.put(url + '.json', json);
-  await cache.put(url, new Response(new Blob(chunks as BlobPart[]), { headers: { 'Content-Type': 'application/octet-stream' } }));
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
 
 export async function deleteModel(model: string) {
