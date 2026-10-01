@@ -142,7 +142,7 @@ export const CATALOG: CatalogVoice[] = [
     accent: 'American English',
     description: 'Narrateur de livres audio, voix chaude et rassurante.',
     model: 'en_US-libritts_r-medium',
-    speaker: 680,
+    speaker: 834,
     sizeMb: 78,
   },
 ];
