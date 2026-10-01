@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#1f2937" />
+    <meta name="description" content="Écoutez vos PDF, documents Word et livres EPUB, même hors ligne." />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icon-192.png" />
+    <title>Lecteur Audio</title>
+  </head>
+  <body>
+    <header class="topbar">
+      <button id="back" class="icon-btn" hidden aria-label="Retour à la bibliothèque">←</button>
+      <h1 id="page-title">Lecteur Audio</h1>
+      <span id="net" class="pill"></span>
+      <button id="open-settings" class="icon-btn" aria-label="Réglages des voix">⚙︎</button>
+    </header>
+
+    <main id="library">
+      <label id="drop" class="drop">
+        <input id="file" type="file" accept=".pdf,.docx,.epub,.txt" multiple hidden />
+        <strong>Importer un document</strong>
+        <span>PDF, Word (.docx) ou EPUB — glissez-déposez ou touchez ici</span>
+        <span class="muted">Les fichiers restent sur votre appareil.</span>
+      </label>
+      <p id="import-status" class="status" hidden></p>
+      <ul id="docs" class="doc-list"></ul>
+      <p id="empty" class="muted center">Votre bibliothèque est vide.</p>
+    </main>
+
+    <main id="reader" hidden>
+      <div class="reader-tools">
+        <select id="chapter" aria-label="Chapitre"></select>
+        <button id="prepare" class="btn">Préparer hors ligne</button>
+        <button id="export" class="btn">Exporter l'audio</button>
+      </div>
+      <p id="prepare-status" class="status" hidden></p>
+      <article id="text" class="text"></article>
+    </main>
+
+    <footer id="player" class="player" hidden>
+      <div class="player-info">
+        <span id="now" class="now"></span>
+        <span id="player-status" class="muted"></span>
+      </div>
+      <div class="controls">
+        <button id="prev-ch" class="icon-btn" aria-label="Chapitre précédent">⏮</button>
+        <button id="prev" class="icon-btn" aria-label="Passage précédent">⏪</button>
+        <button id="play" class="play" aria-label="Lecture">▶</button>
+        <button id="next" class="icon-btn" aria-label="Passage suivant">⏩</button>
+        <button id="next-ch" class="icon-btn" aria-label="Chapitre suivant">⏭</button>
+        <select id="rate" aria-label="Vitesse">
+          <option value="0.75">0,75×</option>
+          <option value="0.9">0,9×</option>
+          <option value="1">1×</option>
+          <option value="1.15">1,15×</option>
+          <option value="1.3">1,3×</option>
+          <option value="1.5">1,5×</option>
+          <option value="1.75">1,75×</option>
+          <option value="2">2×</option>
+        </select>
+      </div>
+    </footer>
+
+    <dialog id="settings">
+      <form method="dialog" class="settings">
+        <header class="dialog-head">
+          <h2>Voix</h2>
+          <button class="icon-btn" value="close" aria-label="Fermer">✕</button>
+        </header>
+
+        <fieldset class="engines">
+          <label class="engine">
+            <input type="radio" name="engine" value="piper" />
+            <span><strong>Voix naturelles hors ligne (Piper)</strong>
+            <small>Voix neuronales issues d'enregistrements humains. Téléchargées une fois, puis 100 % hors ligne.</small></span>
+          </label>
+          <label class="engine">
+            <input type="radio" name="engine" value="elevenlabs" />
+            <span><strong>ElevenLabs</strong>
+            <small>Voix premium (votre clé API). Préparez un livre en ligne, écoutez-le ensuite hors ligne.</small></span>
+          </label>
+          <label class="engine">
+            <input type="radio" name="engine" value="system" />
+            <span><strong>Voix de l'appareil</strong>
+            <small>Voix intégrées au téléphone ou à l'ordinateur. Aucun téléchargement.</small></span>
+          </label>
+        </fieldset>
+
+        <section data-engine="piper">
+          <h3>Voix Piper</h3>
+          <input id="piper-filter" type="search" placeholder="Filtrer (ex. français, english, siwis…)" />
+          <ul id="piper-voices" class="voice-list"></ul>
+        </section>
+
+        <section data-engine="elevenlabs">
+          <h3>ElevenLabs</h3>
+          <label class="field">Clé API
+            <input id="el-key" type="password" autocomplete="off" placeholder="sk_…" />
+          </label>
+          <p class="muted small">La clé est enregistrée uniquement sur cet appareil. Créez-la sur elevenlabs.io → Developers → API Keys.</p>
+          <div class="row">
+            <button type="button" id="el-load" class="btn">Charger mes voix</button>
+            <span id="el-status" class="muted small"></span>
+          </div>
+          <label class="field">Voix <select id="el-voice"></select></label>
+          <label class="field">Modèle <select id="el-model"></select></label>
+        </section>
+
+        <section data-engine="system">
+          <h3>Voix de l'appareil</h3>
+          <label class="field">Voix <select id="sys-voice"></select></label>
+          <p class="muted small">Sur Android, installez des voix « hors ligne » dans Paramètres → Synthèse vocale ; sur iPhone, dans Réglages → Accessibilité → Contenu énoncé → Voix (choisissez les voix « Premium » ou « Améliorée »).</p>
+        </section>
+
+        <div class="row">
+          <button type="button" id="test-voice" class="btn">Tester la voix</button>
+          <span id="test-status" class="muted small"></span>
+        </div>
+        <p id="storage" class="muted small"></p>
+      </form>
+    </dialog>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
