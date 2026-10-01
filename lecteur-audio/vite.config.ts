@@ -28,7 +28,7 @@ export default defineConfig({
       },
       workbox: {
         // Les moteurs WASM sont volumineux : on les met quand même en cache pour le hors-ligne.
-        globPatterns: ['**/*.{js,mjs,css,html,svg,png,wasm,data}'],
+        globPatterns: ['**/*.{js,mjs,css,html,svg,png,wasm,data,mp3}'],
         maximumFileSizeToCacheInBytes: 40 * 1024 * 1024,
         runtimeCaching: [
           {

@@ -1,4 +1,4 @@
-// Petit wrapper IndexedDB : bibliothèque de documents + cache audio.
+// Petit wrapper IndexedDB : bibliothèque de documents.
 
 export interface Chapter {
   title: string;
@@ -53,15 +53,4 @@ export const docs = {
   get: (id: string) => run<LibraryDoc | undefined>(DOCS, 'readonly', (s) => s.get(id)),
   put: (doc: LibraryDoc) => run(DOCS, 'readwrite', (s) => s.put(doc)),
   delete: (id: string) => run(DOCS, 'readwrite', (s) => s.delete(id)),
-};
-
-export const audioCache = {
-  get: (key: string) => run<Blob | undefined>(AUDIO, 'readonly', (s) => s.get(key)),
-  put: (key: string, blob: Blob) => run(AUDIO, 'readwrite', (s) => s.put(blob, key)),
-  has: async (key: string) => (await run<number>(AUDIO, 'readonly', (s) => s.count(key))) > 0,
-  /** Supprime toutes les entrées dont la clé commence par `prefix`. */
-  deletePrefix: (prefix: string) =>
-    run(AUDIO, 'readwrite', (s) => s.delete(IDBKeyRange.bound(prefix, prefix + '￿'))),
-  countPrefix: (prefix: string) =>
-    run<number>(AUDIO, 'readonly', (s) => s.count(IDBKeyRange.bound(prefix, prefix + '￿'))),
 };

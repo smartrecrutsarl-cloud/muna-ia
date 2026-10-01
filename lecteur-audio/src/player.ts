@@ -1,19 +1,10 @@
-import { audioCache, docs, type LibraryDoc } from './db';
-import { elevenSynthesize } from './engines/elevenlabs';
-import { piperSynthesize } from './engines/piper';
+import { docs, type LibraryDoc } from './db';
+import { synthesize } from './engines/piper';
 import { settings, voiceSignature } from './settings';
 
 export interface Pos {
   chapter: number;
   segment: number;
-}
-
-export function cacheKey(docId: string, sig: string, p: Pos) {
-  return `${docId}|${sig}|${String(p.chapter).padStart(5, '0')}|${String(p.segment).padStart(6, '0')}`;
-}
-
-export function cachePrefix(docId: string, sig?: string) {
-  return sig ? `${docId}|${sig}|` : `${docId}|`;
 }
 
 export function textAt(doc: LibraryDoc, p: Pos): string | undefined {
@@ -32,32 +23,9 @@ export function step(doc: LibraryDoc, p: Pos, delta: 1 | -1): Pos | null {
   return null;
 }
 
-/** Produit (ou relit depuis le cache) l'audio d'un segment pour le moteur courant. */
-export async function synthesizeAt(doc: LibraryDoc, p: Pos, opts: { store: boolean }): Promise<Blob> {
-  const sig = voiceSignature();
-  const key = cacheKey(doc.id, sig, p);
-  const cached = await audioCache.get(key);
-  if (cached) return cached;
-
-  const text = textAt(doc, p)!;
-  let blob: Blob;
-  if (settings.engine === 'elevenlabs') {
-    if (!navigator.onLine) throw new Error("Ce passage n'a pas été préparé pour l'écoute hors ligne avec ElevenLabs.");
-    if (!settings.elevenKey || !settings.elevenVoice) throw new Error('Configurez votre clé et votre voix ElevenLabs dans les réglages.');
-    const prev = step(doc, p, -1);
-    const next = step(doc, p, 1);
-    blob = await elevenSynthesize(text, {
-      apiKey: settings.elevenKey,
-      voiceId: settings.elevenVoice,
-      modelId: settings.elevenModel,
-      previousText: prev ? textAt(doc, prev) : undefined,
-      nextText: next ? textAt(doc, next) : undefined,
-    });
-  } else {
-    blob = await piperSynthesize(text, settings.piperVoice);
-  }
-  if (opts.store) await audioCache.put(key, blob);
-  return blob;
+/** Produit l'audio d'un passage avec la voix choisie (synthèse sur l'appareil). */
+export function synthesizeAt(doc: LibraryDoc, p: Pos): Promise<Blob> {
+  return synthesize(textAt(doc, p)!, settings.piperVoice);
 }
 
 type Listener = () => void;
@@ -241,8 +209,7 @@ export class Player {
     const key = `${voiceSignature()}|${p.chapter}|${p.segment}`;
     let promise = this.prefetch.get(key);
     if (!promise) {
-      // ElevenLabs : on garde toujours l'audio (il est payant) ; Piper : régénéré à la volée.
-      promise = synthesizeAt(this.doc!, p, { store: settings.engine === 'elevenlabs' });
+      promise = synthesizeAt(this.doc!, p);
       promise.catch(() => this.prefetch.delete(key));
       this.prefetch.set(key, promise);
       if (this.prefetch.size > 8) this.prefetch.delete(this.prefetch.keys().next().value!);

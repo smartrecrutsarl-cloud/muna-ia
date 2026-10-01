@@ -32,10 +32,9 @@
     <main id="reader" hidden>
       <div class="reader-tools">
         <select id="chapter" aria-label="Chapitre"></select>
-        <button id="prepare" class="btn">Préparer hors ligne</button>
-        <button id="export" class="btn">Exporter l'audio</button>
+        <button id="export" class="btn">Exporter le chapitre (WAV)</button>
       </div>
-      <p id="prepare-status" class="status" hidden></p>
+      <p id="export-status" class="status" hidden></p>
       <article id="text" class="text"></article>
     </main>
 
@@ -73,13 +72,8 @@
         <fieldset class="engines">
           <label class="engine">
             <input type="radio" name="engine" value="piper" />
-            <span><strong>Voix naturelles hors ligne (Piper)</strong>
-            <small>Voix neuronales issues d'enregistrements humains. Téléchargées une fois, puis 100 % hors ligne.</small></span>
-          </label>
-          <label class="engine">
-            <input type="radio" name="engine" value="elevenlabs" />
-            <span><strong>ElevenLabs</strong>
-            <small>Voix premium (votre clé API). Préparez un livre en ligne, écoutez-le ensuite hors ligne.</small></span>
+            <span><strong>Voix de narration</strong>
+            <small>Voix neuronales naturelles, choisies pour la lecture de livres. Téléchargées une fois, puis 100 % hors ligne.</small></span>
           </label>
           <label class="engine">
             <input type="radio" name="engine" value="system" />
@@ -89,23 +83,16 @@
         </fieldset>
 
         <section data-engine="piper">
-          <h3>Voix Piper</h3>
-          <input id="piper-filter" type="search" placeholder="Filtrer (ex. français, english, siwis…)" />
-          <ul id="piper-voices" class="voice-list"></ul>
-        </section>
-
-        <section data-engine="elevenlabs">
-          <h3>ElevenLabs</h3>
-          <label class="field">Clé API
-            <input id="el-key" type="password" autocomplete="off" placeholder="sk_…" />
-          </label>
-          <p class="muted small">La clé est enregistrée uniquement sur cet appareil. Créez-la sur elevenlabs.io → Developers → API Keys.</p>
-          <div class="row">
-            <button type="button" id="el-load" class="btn">Charger mes voix</button>
-            <span id="el-status" class="muted small"></span>
+          <div class="tabs" role="tablist">
+            <button type="button" class="tab" data-lang="fr" role="tab">Français</button>
+            <button type="button" class="tab" data-lang="en" role="tab">English</button>
           </div>
-          <label class="field">Voix <select id="el-voice"></select></label>
-          <label class="field">Modèle <select id="el-model"></select></label>
+          <ul id="catalog" class="voice-list"></ul>
+          <details id="more-voices">
+            <summary>Plus de 100 autres voix (toutes langues)</summary>
+            <input id="piper-filter" type="search" placeholder="Filtrer (ex. español, deutsch, arabic…)" />
+            <ul id="piper-voices" class="voice-list"></ul>
+          </details>
         </section>
 
         <section data-engine="system">
@@ -115,7 +102,7 @@
         </section>
 
         <div class="row">
-          <button type="button" id="test-voice" class="btn">Tester la voix</button>
+          <button type="button" id="test-voice" class="btn">Tester la voix choisie</button>
           <span id="test-status" class="muted small"></span>
         </div>
         <p id="storage" class="muted small"></p>

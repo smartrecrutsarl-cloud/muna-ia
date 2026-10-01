@@ -1,19 +1,19 @@
 import './style.css';
 import { registerSW } from 'virtual:pwa-register';
-import { audioCache, docs, type LibraryDoc } from './db';
-import { ELEVEN_MODELS, elevenSynthesize, elevenVoices, type ElevenVoice } from './engines/elevenlabs';
+import { docs, type LibraryDoc } from './db';
 import {
-  RECOMMENDED,
-  deleteVoice,
-  downloadVoice,
-  downloadedVoices,
-  piperSynthesize,
-  piperVoices,
+  allPiperVoices,
+  deleteModel,
+  downloadModel,
+  downloadedModels,
+  resolveVoice,
+  synthesize,
 } from './engines/piper';
-import { charCount, exportAudio, prepareOffline, preparedRatio } from './offline';
+import { exportChapter } from './offline';
 import { parseFile } from './parsers';
-import { Player, cachePrefix } from './player';
+import { Player } from './player';
 import { saveSettings, settings, type EngineId } from './settings';
+import { CATALOG, SAMPLE_TEXT, type CatalogVoice } from './voices';
 
 registerSW({ immediate: true });
 navigator.storage?.persist?.().catch(() => {});
@@ -69,7 +69,6 @@ async function renderLibrary() {
     li.querySelector<HTMLButtonElement>('.doc-delete')!.onclick = async () => {
       if (!confirm(`Supprimer « ${doc.title} » et son audio préparé ?`)) return;
       await docs.delete(doc.id);
-      await audioCache.deletePrefix(cachePrefix(doc.id));
       renderLibrary();
     };
     ul.append(li);
@@ -133,9 +132,9 @@ async function openDoc(id: string) {
     ...doc.chapters.map((c, i) => new Option(`${i + 1}. ${c.title}`, String(i))),
   );
   renderedChapter = -1;
-  show($('prepare-status'), '');
+  show($('export-status'), '');
   renderReader();
-  updatePrepareStatus();
+  updateExportButton();
   history.pushState({ doc: id }, '');
 }
 
@@ -147,7 +146,7 @@ function closeDoc() {
   $('player').hidden = true;
   $('back').hidden = true;
   $('page-title').textContent = 'Lecteur Audio';
-  abortPrepare?.abort();
+  abortExport?.abort();
   renderLibrary();
 }
 
@@ -214,9 +213,7 @@ addEventListener('keydown', (e) => {
 });
 
 function engineLabel(): string {
-  if (settings.engine === 'piper') return `Piper · ${settings.piperVoice.split('-')[1] ?? ''}`;
-  if (settings.engine === 'elevenlabs') return `ElevenLabs · ${elevenName(settings.elevenVoice)}`;
-  return 'Voix de l’appareil';
+  return settings.engine === 'piper' ? `Voix : ${resolveVoice(settings.piperVoice).label}` : 'Voix de l’appareil';
 }
 
 function refreshPlayerUI() {
@@ -232,82 +229,58 @@ function refreshPlayerUI() {
 }
 player.onChange(refreshPlayerUI);
 
-// ---------- Préparation hors ligne & export ----------
 
-let abortPrepare: AbortController | null = null;
+// ---------- Export d'un chapitre ----------
 
-async function updatePrepareStatus() {
-  const doc = currentDoc;
-  const prepareBtn = $<HTMLButtonElement>('prepare');
-  const exportBtn = $<HTMLButtonElement>('export');
-  const system = settings.engine === 'system';
-  prepareBtn.hidden = exportBtn.hidden = system;
-  if (!doc || system || abortPrepare) return;
-  const ratio = await preparedRatio(doc);
-  exportBtn.disabled = ratio < 1;
-  prepareBtn.textContent = ratio >= 1 ? 'Prêt hors ligne ✓' : ratio > 0 ? `Préparer hors ligne (${Math.floor(ratio * 100)} %)` : 'Préparer hors ligne';
+let abortExport: AbortController | null = null;
+
+function updateExportButton() {
+  const btn = $<HTMLButtonElement>('export');
+  btn.hidden = settings.engine === 'system';
+  btn.textContent = abortExport ? 'Arrêter l’export' : 'Exporter le chapitre (WAV)';
 }
-
-$('prepare').onclick = async () => {
-  const doc = currentDoc;
-  if (!doc) return;
-  const status = $('prepare-status');
-  const btn = $<HTMLButtonElement>('prepare');
-  if (abortPrepare) {
-    abortPrepare.abort();
-    return;
-  }
-  if (settings.engine === 'elevenlabs') {
-    const chars = charCount(doc);
-    if (!confirm(`La préparation va envoyer jusqu'à ${chars.toLocaleString('fr-FR')} caractères à ElevenLabs (les passages déjà préparés ne sont pas recomptés). Cela consomme vos crédits. Continuer ?`)) return;
-  } else if (!confirm("L'audio Piper sera généré sur cet appareil et stocké (environ 2,5 Mo par minute) pour permettre l'export. L'écoute hors ligne avec Piper fonctionne déjà sans cette étape. Continuer ?")) {
-    return;
-  }
-  abortPrepare = new AbortController();
-  btn.textContent = 'Arrêter';
-  try {
-    await prepareOffline(doc, (done, total) => show(status, `Préparation : ${done}/${total} passages (${Math.floor((done / total) * 100)} %)`), abortPrepare.signal);
-    show(status, abortPrepare.signal.aborted ? 'Préparation interrompue. Vous pourrez la reprendre plus tard.' : 'Document prêt pour l’écoute hors ligne.');
-  } catch (err) {
-    show(status, errorText(err), true);
-  } finally {
-    abortPrepare = null;
-    updatePrepareStatus();
-  }
-};
 
 $('export').onclick = async () => {
   const doc = currentDoc;
   if (!doc) return;
-  const status = $('prepare-status');
+  if (abortExport) {
+    abortExport.abort();
+    return;
+  }
+  const status = $('export-status');
+  const chapter = player.pos.chapter;
+  abortExport = new AbortController();
+  updateExportButton();
   try {
-    show(status, 'Assemblage du fichier audio…');
-    const blob = await exportAudio(doc);
+    const blob = await exportChapter(
+      doc,
+      chapter,
+      (done, total) => show(status, `Génération du chapitre : ${done}/${total} passages (${Math.floor((done / total) * 100)} %)`),
+      abortExport.signal,
+    );
+    if (!blob) {
+      show(status, 'Export interrompu.');
+      return;
+    }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `${doc.title}.${blob.type === 'audio/mpeg' ? 'mp3' : 'wav'}`;
+    a.download = `${doc.title} — ${chapter + 1}. ${doc.chapters[chapter].title}.wav`.replace(/[\\/:*?"<>|]/g, '_');
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 60_000);
-    show(status, `Fichier exporté (${(blob.size / 1e6).toFixed(1)} Mo).`);
+    show(status, `Chapitre exporté (${(blob.size / 1e6).toFixed(1)} Mo).`);
   } catch (err) {
     show(status, errorText(err), true);
+  } finally {
+    abortExport = null;
+    updateExportButton();
   }
 };
 
 // ---------- Réglages ----------
 
 const dialog = $<HTMLDialogElement>('settings');
-let elevenList: ElevenVoice[] = (() => {
-  try {
-    return JSON.parse(localStorage.getItem('lecteur-audio:el-voices') ?? '[]');
-  } catch {
-    return [];
-  }
-})();
-
-function elevenName(id: string) {
-  return elevenList.find((v) => v.id === id)?.name ?? 'voix non choisie';
-}
+let catalogLang: 'fr' | 'en' = resolveVoice(settings.piperVoice).model.startsWith('en') ? 'en' : 'fr';
+const downloading = new Map<string, number>();
 
 function applyEngineVisibility() {
   dialog.querySelectorAll<HTMLElement>('section[data-engine]').forEach((s) => {
@@ -320,7 +293,7 @@ function applyEngineVisibility() {
 
 function changed() {
   player.settingsChanged();
-  updatePrepareStatus();
+  updateExportButton();
   refreshPlayerUI();
 }
 
@@ -334,151 +307,180 @@ dialog.querySelectorAll<HTMLInputElement>('input[name=engine]').forEach((r) => {
 
 $('open-settings').onclick = () => {
   applyEngineVisibility();
-  renderPiperVoices();
-  renderElevenSelects();
+  renderCatalog();
   renderSystemVoices();
   renderStorage();
   dialog.showModal();
 };
 
-// Piper
-let downloading = new Map<string, number>();
+function useVoice(key: string) {
+  saveSettings({ piperVoice: key, engine: 'piper' });
+  applyEngineVisibility();
+  changed();
+  renderCatalog();
+  if ((dialog.querySelector('#more-voices') as HTMLDetailsElement).open) renderOtherVoices();
+}
 
-async function renderPiperVoices() {
-  const ul = $('piper-voices');
-  const filter = $<HTMLInputElement>('piper-filter').value.trim().toLowerCase();
-  let list;
+/** Télécharge un modèle (partagé par plusieurs voix du catalogue le cas échéant). */
+async function startDownload(model: string, thenUse?: string) {
+  downloading.set(model, 0);
+  rerender();
+  let last = 0;
   try {
-    list = await piperVoices();
+    await downloadModel(model, (r) => {
+      downloading.set(model, r);
+      if (Date.now() - last > 300) {
+        last = Date.now();
+        rerender();
+      }
+    });
+    if (thenUse) useVoice(thenUse);
   } catch (err) {
-    ul.textContent = errorText(err);
-    return;
+    alert(`Téléchargement impossible : ${errorText(err)}`);
+  } finally {
+    downloading.delete(model);
+    rerender();
   }
-  const have = await downloadedVoices();
-  const visible = list.filter((v) =>
-    filter
-      ? `${v.id} ${v.language} ${v.name}`.toLowerCase().includes(filter)
-      : RECOMMENDED.includes(v.id) || have.has(v.id) || v.id === settings.piperVoice,
-  );
+}
+
+function rerender() {
+  renderCatalog();
+  if ((dialog.querySelector('#more-voices') as HTMLDetailsElement).open) renderOtherVoices();
+}
+
+function button(label: string, onClick: () => void, cls = 'btn') {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = cls;
+  b.textContent = label;
+  b.onclick = onClick;
+  return b;
+}
+
+// Extraits pré-enregistrés : on peut écouter une voix avant de la télécharger.
+const sampleAudio = new Audio();
+let playingSample = '';
+sampleAudio.onended = () => {
+  playingSample = '';
+  renderCatalog();
+};
+
+function playSample(v: CatalogVoice) {
+  if (playingSample === v.id) {
+    sampleAudio.pause();
+    playingSample = '';
+  } else {
+    sampleAudio.src = `samples/${v.id}.mp3`;
+    sampleAudio.playbackRate = 1;
+    void sampleAudio.play();
+    playingSample = v.id;
+  }
+  renderCatalog();
+}
+
+async function renderCatalog() {
+  dialog.querySelectorAll<HTMLButtonElement>('.tab').forEach((t) => {
+    t.classList.toggle('active', t.dataset.lang === catalogLang);
+    t.onclick = () => {
+      catalogLang = t.dataset.lang as 'fr' | 'en';
+      renderCatalog();
+    };
+  });
+  const have = await downloadedModels();
+  const ul = $('catalog');
   ul.replaceChildren(
-    ...visible.map((v) => {
+    ...CATALOG.filter((v) => v.lang === catalogLang).map((v) => {
       const li = document.createElement('li');
-      li.className = 'voice' + (v.id === settings.piperVoice ? ' selected' : '');
-      const progress = downloading.get(v.id);
-      const ok = have.has(v.id);
+      const selected = settings.piperVoice === v.id;
+      li.className = 'voice' + (selected ? ' selected' : '');
       li.innerHTML = `
-        <span class="voice-name"><strong></strong><small class="muted"></small></span>
+        <span class="voice-name"><strong></strong><small class="muted"></small><small></small></span>
         <span class="voice-actions"></span>`;
-      li.querySelector('strong')!.textContent = v.name;
-      li.querySelector('small')!.textContent = `${v.language} · qualité ${v.quality} · ${v.sizeMb} Mo`;
+      li.querySelector('strong')!.textContent = `${v.name} ${v.gender === 'f' ? '♀' : '♂'}`;
+      const [meta, desc] = li.querySelectorAll('small');
+      meta.textContent = `${v.accent} · ${v.sizeMb} Mo`;
+      desc.textContent = v.description;
       const actions = li.querySelector('.voice-actions')!;
+      actions.append(button(playingSample === v.id ? '■' : '▶ Extrait', () => playSample(v), 'btn btn-ghost'));
+      const progress = downloading.get(v.model);
       if (progress !== undefined) {
-        actions.textContent = `${Math.round(progress * 100)} %`;
-      } else if (ok) {
-        const use = document.createElement('button');
-        use.type = 'button';
-        use.className = 'btn';
-        use.textContent = v.id === settings.piperVoice ? 'Utilisée ✓' : 'Utiliser';
-        use.onclick = () => {
-          saveSettings({ piperVoice: v.id });
-          changed();
-          renderPiperVoices();
-        };
-        const del = document.createElement('button');
-        del.type = 'button';
-        del.className = 'icon-btn';
-        del.textContent = '🗑';
-        del.ariaLabel = 'Supprimer la voix';
-        del.onclick = async () => {
-          await deleteVoice(v.id);
-          renderPiperVoices();
-        };
-        actions.append(use, del);
+        const span = document.createElement('span');
+        span.className = 'muted small';
+        span.textContent = `${Math.round(progress * 100)} %`;
+        actions.append(span);
+      } else if (have.has(v.model)) {
+        actions.append(button(selected ? 'Choisie ✓' : 'Choisir', () => useVoice(v.id)));
       } else {
-        const dl = document.createElement('button');
-        dl.type = 'button';
-        dl.className = 'btn';
-        dl.textContent = 'Télécharger';
+        const dl = button('Télécharger', () => startDownload(v.model, v.id));
         dl.disabled = !navigator.onLine;
-        dl.onclick = async () => {
-          downloading.set(v.id, 0);
-          renderPiperVoices();
-          let last = 0;
-          try {
-            await downloadVoice(v.id, (r) => {
-              downloading.set(v.id, r);
-              if (Date.now() - last > 300) {
-                last = Date.now();
-                renderPiperVoices();
-              }
-            });
-            downloading.delete(v.id);
-            if (!have.size) saveSettings({ piperVoice: v.id });
-            if (settings.piperVoice === v.id) changed();
-          } catch (err) {
-            downloading.delete(v.id);
-            alert(`Téléchargement impossible : ${errorText(err)}`);
-          }
-          setTimeout(renderPiperVoices, 500);
-        };
         actions.append(dl);
       }
       return li;
     }),
   );
-  if (!filter) {
-    const hint = document.createElement('li');
-    hint.className = 'muted small';
-    hint.textContent = 'Tapez une langue dans le filtre pour voir plus de 100 autres voix (anglais, espagnol, arabe…).';
-    ul.append(hint);
+  const models = new Set(CATALOG.map((v) => v.model));
+  const stored = [...have].filter((m) => models.has(m));
+  if (stored.length) {
+    const li = document.createElement('li');
+    li.className = 'muted small manage';
+    li.append(`Voix téléchargées : ${stored.length}. `);
+    li.append(
+      button('Libérer de l’espace…', async () => {
+        const names = CATALOG.filter((v) => have.has(v.model) && resolveVoice(settings.piperVoice).model !== v.model).map((v) => v.name);
+        if (!names.length) return alert('Seule la voix utilisée est téléchargée.');
+        if (!confirm(`Supprimer les voix téléchargées non utilisées (${names.join(', ')}) ?`)) return;
+        for (const m of stored) if (m !== resolveVoice(settings.piperVoice).model) await deleteModel(m);
+        renderCatalog();
+        renderStorage();
+      }, 'link'),
+    );
+    ul.append(li);
   }
 }
-$('piper-filter').oninput = () => renderPiperVoices();
 
-// ElevenLabs
-const elKey = $<HTMLInputElement>('el-key');
-elKey.value = settings.elevenKey;
-elKey.onchange = () => saveSettings({ elevenKey: elKey.value.trim() });
-
-function renderElevenSelects() {
-  const voice = $<HTMLSelectElement>('el-voice');
-  voice.replaceChildren(
-    new Option(elevenList.length ? '— choisir une voix —' : '— chargez vos voix —', ''),
-    ...elevenList.map((v) => new Option(v.description ? `${v.name} (${v.description})` : v.name, v.id)),
-  );
-  voice.value = settings.elevenVoice;
-  const model = $<HTMLSelectElement>('el-model');
-  model.replaceChildren(...ELEVEN_MODELS.map((m) => new Option(m.label, m.id)));
-  model.value = settings.elevenModel;
-}
-
-$('el-load').onclick = async () => {
-  const status = $('el-status');
-  saveSettings({ elevenKey: elKey.value.trim() });
-  if (!settings.elevenKey) {
-    status.textContent = 'Saisissez d’abord votre clé API.';
+async function renderOtherVoices() {
+  const ul = $('piper-voices');
+  const filter = $<HTMLInputElement>('piper-filter').value.trim().toLowerCase();
+  let list;
+  try {
+    list = await allPiperVoices();
+  } catch (err) {
+    ul.textContent = errorText(err);
     return;
   }
-  status.textContent = 'Chargement…';
-  try {
-    elevenList = await elevenVoices(settings.elevenKey);
-    localStorage.setItem('lecteur-audio:el-voices', JSON.stringify(elevenList));
-    status.textContent = `${elevenList.length} voix disponibles.`;
-    if (!settings.elevenVoice && elevenList[0]) saveSettings({ elevenVoice: elevenList[0].id });
-    renderElevenSelects();
-    changed();
-  } catch (err) {
-    status.textContent = errorText(err);
-  }
-};
-$<HTMLSelectElement>('el-voice').onchange = (e) => {
-  saveSettings({ elevenVoice: (e.target as HTMLSelectElement).value });
-  changed();
-};
-$<HTMLSelectElement>('el-model').onchange = (e) => {
-  saveSettings({ elevenModel: (e.target as HTMLSelectElement).value });
-  changed();
-};
+  const have = await downloadedModels();
+  const visible = list.filter((v) => !filter || `${v.id} ${v.language} ${v.name}`.toLowerCase().includes(filter)).slice(0, 60);
+  ul.replaceChildren(
+    ...visible.map((v) => {
+      const li = document.createElement('li');
+      li.className = 'voice' + (settings.piperVoice === v.id ? ' selected' : '');
+      li.innerHTML = `<span class="voice-name"><strong></strong><small class="muted"></small></span><span class="voice-actions"></span>`;
+      li.querySelector('strong')!.textContent = v.name;
+      li.querySelector('small')!.textContent = `${v.language} · ${v.quality} · ${v.sizeMb} Mo`;
+      const actions = li.querySelector('.voice-actions')!;
+      const progress = downloading.get(v.id);
+      if (progress !== undefined) actions.textContent = `${Math.round(progress * 100)} %`;
+      else if (have.has(v.id)) {
+        actions.append(
+          button(settings.piperVoice === v.id ? 'Choisie ✓' : 'Choisir', () => useVoice(v.id)),
+          button('🗑', async () => {
+            await deleteModel(v.id);
+            renderOtherVoices();
+          }, 'icon-btn'),
+        );
+      } else {
+        const dl = button('Télécharger', () => startDownload(v.id, v.id));
+        dl.disabled = !navigator.onLine;
+        actions.append(dl);
+      }
+      return li;
+    }),
+  );
+}
+$('piper-filter').oninput = () => renderOtherVoices();
+$('more-voices').addEventListener('toggle', () => {
+  if (($('more-voices') as HTMLDetailsElement).open) renderOtherVoices();
+});
 
 // Voix système
 function renderSystemVoices() {
@@ -499,8 +501,7 @@ $<HTMLSelectElement>('sys-voice').onchange = (e) => {
   changed();
 };
 
-// Test de voix
-const SAMPLE = 'Bonjour ! Voici un aperçu de cette voix. Bonne écoute de vos livres.';
+// Test de la voix choisie (synthèse réelle sur l'appareil)
 const testAudio = new Audio();
 $('test-voice').onclick = async () => {
   const status = $('test-status');
@@ -508,7 +509,7 @@ $('test-voice').onclick = async () => {
   try {
     if (settings.engine === 'system') {
       speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(SAMPLE);
+      const u = new SpeechSynthesisUtterance(SAMPLE_TEXT.fr);
       const v = speechSynthesis.getVoices().find((x) => x.voiceURI === settings.systemVoice);
       if (v) u.voice = v;
       u.lang = v?.lang ?? 'fr-FR';
@@ -516,14 +517,9 @@ $('test-voice').onclick = async () => {
       speechSynthesis.speak(u);
       return;
     }
-    status.textContent = 'Génération…';
-    let blob: Blob;
-    if (settings.engine === 'piper') {
-      blob = await piperSynthesize(SAMPLE, settings.piperVoice);
-    } else {
-      if (!settings.elevenKey || !settings.elevenVoice) throw new Error('Clé ou voix ElevenLabs manquante.');
-      blob = await elevenSynthesize(SAMPLE, { apiKey: settings.elevenKey, voiceId: settings.elevenVoice, modelId: settings.elevenModel });
-    }
+    status.textContent = 'Génération sur l’appareil…';
+    const voice = resolveVoice(settings.piperVoice);
+    const blob = await synthesize(voice.model.startsWith('fr') ? SAMPLE_TEXT.fr : SAMPLE_TEXT.en, settings.piperVoice);
     testAudio.src = URL.createObjectURL(blob);
     testAudio.playbackRate = settings.rate;
     await testAudio.play();
@@ -540,15 +536,11 @@ async function renderStorage() {
   }
 }
 
-// Premier lancement : proposer de télécharger une voix.
+// Premier lancement : proposer de choisir et télécharger une voix.
 renderLibrary();
 (async () => {
   if (settings.engine === 'piper' && navigator.onLine) {
-    const have = await downloadedVoices().catch(() => new Set<string>());
-    if (!have.size) {
-      setTimeout(() => {
-        $('open-settings').click();
-      }, 400);
-    }
+    const have = await downloadedModels().catch(() => new Set<string>());
+    if (!have.size) setTimeout(() => $('open-settings').click(), 400);
   }
 })();
