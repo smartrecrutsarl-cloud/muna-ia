@@ -10,9 +10,17 @@ export function normalize(text: string): string {
     .trim();
 }
 
+/** Retire les points de conduite (« ....... ») et soulignements des tables des matières. */
+export function cleanText(text: string): string {
+  return text
+    .replace(/(?:[.·•…_\-–—]\s?){4,}/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 /** Découpe un paragraphe en segments sans couper les phrases quand c'est possible. */
 export function splitParagraph(paragraph: string): string[] {
-  const text = paragraph.replace(/\s+/g, ' ').trim();
+  const text = cleanText(paragraph);
   if (!text) return [];
   if (text.length <= MAX) return [text];
 

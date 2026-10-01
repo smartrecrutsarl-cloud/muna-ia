@@ -96,23 +96,43 @@ export async function downloadedModels(): Promise<Set<string>> {
   return new Set([...Object.keys(PATH_MAP), ...CATALOG.map((c) => c.model)].filter((m) => urls.has(modelUrl(m)) && urls.has(modelUrl(m) + '.json')));
 }
 
-export async function downloadModel(model: string, onProgress: (ratio: number) => void) {
-  const cache = await caches.open(MODEL_CACHE);
-  const key = modelUrl(model);
-  let lastError: unknown;
-  for (const source of modelSources(model)) {
-    try {
-      const json = await fetchWithProgress(source + '.json');
-      const onnx = await fetchWithProgress(source, onProgress);
-      // Toujours rangé sous l'adresse officielle, quelle que soit la source utilisée.
-      await cache.put(key + '.json', new Response(json, { headers: { 'Content-Type': 'application/json' } }));
-      await cache.put(key, new Response(onnx, { headers: { 'Content-Type': 'application/octet-stream' } }));
-      return;
-    } catch (err) {
-      lastError = err;
-    }
+const inFlight = new Map<string, { promise: Promise<void>; listeners: Set<(r: number) => void> }>();
+
+function explain(err: unknown, source: string): string {
+  const host = new URL(source).host;
+  if (err instanceof TypeError) return `${host} injoignable (connexion coupée ou site bloqué par le réseau)`;
+  if (err instanceof Error && err.name === 'QuotaExceededError') return 'espace de stockage insuffisant sur l’appareil';
+  return `${host} : ${err instanceof Error ? err.message : String(err)}`;
+}
+
+/** Télécharge un modèle une seule fois, même si plusieurs écrans le demandent en même temps. */
+export function downloadModel(model: string, onProgress: (ratio: number) => void): Promise<void> {
+  const running = inFlight.get(model);
+  if (running) {
+    running.listeners.add(onProgress);
+    return running.promise;
   }
-  throw lastError instanceof Error ? lastError : new Error(String(lastError));
+  const listeners = new Set([onProgress]);
+  const promise = (async () => {
+    const cache = await caches.open(MODEL_CACHE);
+    const key = modelUrl(model);
+    const errors: string[] = [];
+    for (const source of modelSources(model)) {
+      try {
+        const json = await fetchWithProgress(source + '.json');
+        const onnx = await fetchWithProgress(source, (r) => listeners.forEach((l) => l(r)));
+        // Toujours rangé sous l'adresse officielle, quelle que soit la source utilisée.
+        await cache.put(key + '.json', new Response(json, { headers: { 'Content-Type': 'application/json' } }));
+        await cache.put(key, new Response(onnx, { headers: { 'Content-Type': 'application/octet-stream' } }));
+        return;
+      } catch (err) {
+        errors.push(explain(err, source));
+      }
+    }
+    throw new Error(`Téléchargement de la voix impossible — ${[...new Set(errors)].join(" ; ")}.`);
+  })().finally(() => inFlight.delete(model));
+  inFlight.set(model, { promise, listeners });
+  return promise;
 }
 
 export async function deleteModel(model: string) {

@@ -79,11 +79,8 @@ async function readModelFile(url: string): Promise<Response> {
   const cache = await caches.open(MODEL_CACHE);
   const hit = await cache.match(url);
   if (hit) return hit;
-  // Pas encore téléchargé : on le récupère (et on le garde) si le réseau est disponible.
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Voix non téléchargée. Téléchargez-la dans les réglages (connexion requise une fois).');
-  await cache.put(url, res.clone());
-  return res;
+  // Le téléchargement est géré par la page (avec sources de secours et progression).
+  throw new Error('Voix non téléchargée. Téléchargez-la dans les réglages (connexion requise une fois).');
 }
 
 let loaded: { url: string; session: ort.InferenceSession; config: ModelConfig } | null = null;

@@ -1,5 +1,5 @@
 import { docs, type LibraryDoc } from './db';
-import { synthesize } from './engines/piper';
+import { downloadModel, isModelDownloaded, resolveVoice, synthesize } from './engines/piper';
 import { settings, voiceSignature } from './settings';
 
 export interface Pos {
@@ -36,6 +36,8 @@ export class Player {
   playing = false;
   loading = false;
   error = '';
+  /** Message d'information temporaire (ex. téléchargement de la voix). */
+  notice = '';
 
   private audio = new Audio();
   private token = 0;
@@ -217,12 +219,34 @@ export class Player {
     return promise;
   }
 
+  /** Télécharge la voix choisie si elle n'est pas encore sur l'appareil. */
+  private async ensureVoice(token: number) {
+    const voice = resolveVoice(settings.piperVoice);
+    if (await isModelDownloaded(voice.model)) return;
+    if (!navigator.onLine) {
+      throw new Error(`La voix ${voice.label} n'est pas encore sur l'appareil : connectez-vous une fois à Internet pour la télécharger.`);
+    }
+    try {
+      this.notice = `Téléchargement de la voix ${voice.label}…`;
+      this.emit();
+      await downloadModel(voice.model, (r) => {
+        if (token !== this.token) return;
+        this.notice = `Téléchargement de la voix ${voice.label}… ${Math.round(r * 100)} %`;
+        this.emit();
+      });
+    } finally {
+      this.notice = '';
+    }
+  }
+
   private async playAudio(token: number) {
     const doc = this.doc!;
     const pos = { ...this.pos };
     this.loading = true;
     this.emit();
     try {
+      await this.ensureVoice(token);
+      if (token !== this.token) return;
       const blob = await this.getAudio(pos);
       if (token !== this.token) return;
       // On prépare les deux segments suivants pendant la lecture.

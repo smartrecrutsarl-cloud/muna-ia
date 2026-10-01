@@ -11,6 +11,7 @@ import {
 } from './engines/piper';
 import { exportChapter } from './offline';
 import { parseFile } from './parsers';
+import { cleanText } from './segment';
 import { Player } from './player';
 import { saveSettings, settings, type EngineId } from './settings';
 import { CATALOG, SAMPLE_TEXT, type CatalogVoice } from './voices';
@@ -120,6 +121,16 @@ let renderedChapter = -1;
 async function openDoc(id: string) {
   const doc = await docs.get(id);
   if (!doc) return;
+  // Documents importés avec une version précédente : on retire les pointillés de sommaire.
+  let cleaned = false;
+  for (const c of doc.chapters) {
+    c.segments = c.segments.map((seg) => {
+      const t = cleanText(seg) || seg;
+      if (t !== seg) cleaned = true;
+      return t;
+    });
+  }
+  if (cleaned) await docs.put(doc);
   currentDoc = doc;
   player.load(doc);
   $('library').hidden = true;
@@ -224,7 +235,7 @@ function refreshPlayerUI() {
   $('now').textContent = `${doc.chapters[player.pos.chapter].title} — ${player.pos.segment + 1}/${doc.chapters[player.pos.chapter].segments.length}`;
   const status = $('player-status');
   status.classList.toggle('error', !!player.error);
-  status.textContent = player.error || (player.loading ? 'Génération de la voix…' : engineLabel());
+  status.textContent = player.error || player.notice || (player.loading ? 'Génération de la voix…' : engineLabel());
   renderReader();
 }
 player.onChange(refreshPlayerUI);
