@@ -3,6 +3,8 @@
 Application web installable (PWA) qui lit à voix haute vos **PDF**, documents **Word (.docx)** et livres **EPUB**,
 **y compris hors ligne**.
 
+🌐 **En ligne : https://lecteur-audio-muna.netlify.app** — ouvrez-la sur votre téléphone puis « Installer l'application ».
+
 ## Les voix
 
 L'application propose **12 voix de narration** sélectionnées pour la lecture de livres, qui fonctionnent
