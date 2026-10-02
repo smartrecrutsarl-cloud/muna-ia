@@ -1,6 +1,6 @@
 // Découpe le texte en segments lisibles (phrases regroupées, ~350 caractères max).
 
-const MAX = 350;
+const MAX = 260;
 
 export function normalize(text: string): string {
   return text
@@ -57,4 +57,17 @@ export function splitParagraph(paragraph: string): string[] {
 
 export function toSegments(paragraphs: string[]): string[] {
   return paragraphs.flatMap(splitParagraph);
+}
+
+/** Segments + indices des segments qui commencent un nouveau paragraphe. */
+export function toParagraphs(paragraphs: string[]): { segments: string[]; breaks: number[] } {
+  const segments: string[] = [];
+  const breaks: number[] = [];
+  for (const p of paragraphs) {
+    const parts = splitParagraph(p);
+    if (!parts.length) continue;
+    breaks.push(segments.length);
+    segments.push(...parts);
+  }
+  return { segments, breaks };
 }

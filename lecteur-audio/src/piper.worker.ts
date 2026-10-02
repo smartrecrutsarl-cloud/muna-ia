@@ -1,17 +1,15 @@
 // Synthèse vocale Piper exécutée entièrement sur l'appareil, dans un worker.
 import * as ort from 'onnxruntime-web/wasm';
 import ortWasm from 'onnxruntime-web/ort-wasm-simd-threaded.wasm?url';
+import ortMjs from 'onnxruntime-web/ort-wasm-simd-threaded.mjs?url';
 import piperWasmUrl from '@diffusionstudio/piper-wasm/build/piper_phonemize.wasm?url';
 import piperDataUrl from '@diffusionstudio/piper-wasm/build/piper_phonemize.data?url';
 import { createPiperPhonemize } from './vendor/piper-phonemize.js';
 import { MODEL_CACHE } from './engines/model-cache';
 
-export interface SpeakRequest {
-  id: number;
-  text: string;
-  modelUrl: string;
-  speaker: number;
-}
+export type WorkerRequest =
+  | { type: 'speak'; id: number; text: string; modelUrl: string; speaker: number }
+  | { type: 'warm'; id: number; modelUrl: string };
 
 interface ModelConfig {
   audio: { sample_rate: number };
@@ -22,7 +20,7 @@ interface ModelConfig {
 }
 
 const abs = (u: string) => new URL(u, self.location.href).href;
-ort.env.wasm.wasmPaths = { wasm: abs(ortWasm) };
+ort.env.wasm.wasmPaths = { wasm: abs(ortWasm), mjs: abs(ortMjs) };
 ort.env.wasm.numThreads = self.crossOriginIsolated ? Math.min(4, navigator.hardwareConcurrency || 1) : 1;
 
 /** Pause ajoutée après chaque passage, pour un rythme de livre audio. */
@@ -121,7 +119,7 @@ function toWav(pcm: Float32Array, sampleRate: number): Blob {
   return new Blob([view.buffer], { type: 'audio/wav' });
 }
 
-async function speak({ text, modelUrl, speaker }: SpeakRequest): Promise<Blob> {
+async function speak({ text, modelUrl, speaker }: { text: string; modelUrl: string; speaker: number }): Promise<Blob> {
   const { session, config } = await loadModel(modelUrl);
   const ids = await phonemeIds(text, config);
   const { noise_scale, length_scale, noise_w } = config.inference;
@@ -137,11 +135,17 @@ async function speak({ text, modelUrl, speaker }: SpeakRequest): Promise<Blob> {
 
 // Les requêtes sont traitées une par une.
 let queue = Promise.resolve();
-self.onmessage = (e: MessageEvent<SpeakRequest>) => {
+self.onmessage = (e: MessageEvent<WorkerRequest>) => {
   const req = e.data;
   queue = queue.then(async () => {
     try {
-      self.postMessage({ id: req.id, blob: await speak(req) });
+      if (req.type === 'warm') {
+        const { config } = await loadModel(req.modelUrl);
+        await phonemeIds('.', config);
+        self.postMessage({ id: req.id });
+      } else {
+        self.postMessage({ id: req.id, blob: await speak(req) });
+      }
     } catch (err) {
       self.postMessage({ id: req.id, error: err instanceof Error ? err.message : String(err) });
     }

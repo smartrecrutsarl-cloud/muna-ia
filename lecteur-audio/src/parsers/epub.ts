@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
 import type { Chapter } from '../db';
-import { toSegments } from '../segment';
+import { toParagraphs } from '../segment';
 import { htmlToParagraphs } from './html';
 
 function resolvePath(base: string, href: string): string {
@@ -67,9 +67,26 @@ export async function parseEpub(data: ArrayBuffer, onProgress?: (p: number) => v
   const title = opf.getElementsByTagName('dc:title')[0]?.textContent?.trim()
     || opf.getElementsByTagNameNS('*', 'title')[0]?.textContent?.trim();
 
+  const author = opf.getElementsByTagName('dc:creator')[0]?.textContent?.trim()
+    || opf.getElementsByTagNameNS('*', 'creator')[0]?.textContent?.trim();
+
   const manifest = new Map<string, string>();
-  for (const item of Array.from(opf.getElementsByTagName('item'))) {
+  const items = Array.from(opf.getElementsByTagName('item'));
+  for (const item of items) {
     manifest.set(item.getAttribute('id')!, resolvePath(opfPath, item.getAttribute('href')!));
+  }
+
+  // Couverture : EPUB 3 (properties="cover-image"), EPUB 2 (<meta name="cover">), ou nom de fichier.
+  const coverMetaId = Array.from(opf.getElementsByTagName('meta')).find((m) => m.getAttribute('name') === 'cover')?.getAttribute('content');
+  const coverItem =
+    items.find((i) => (i.getAttribute('properties') ?? '').split(' ').includes('cover-image')) ??
+    items.find((i) => coverMetaId && i.getAttribute('id') === coverMetaId) ??
+    items.find((i) => /^image\//.test(i.getAttribute('media-type') ?? '') && /cover/i.test(i.getAttribute('href') ?? ''));
+  let coverBlob: Blob | undefined;
+  if (coverItem) {
+    const path = resolvePath(opfPath, coverItem.getAttribute('href')!);
+    const file = zip.file(path);
+    if (file) coverBlob = new Blob([await file.async('arraybuffer')], { type: coverItem.getAttribute('media-type') ?? 'image/jpeg' });
   }
   const titles = await tocTitles(zip, opf, opfPath);
 
@@ -83,11 +100,11 @@ export async function parseEpub(data: ArrayBuffer, onProgress?: (p: number) => v
     const path = spine[i];
     const doc = parseXml(await zip.file(path)!.async('string'), 'application/xhtml+xml');
     const body = doc.getElementsByTagName('body')[0] ?? doc.documentElement;
-    const segments = toSegments(htmlToParagraphs(body));
+    const { segments, breaks } = toParagraphs(htmlToParagraphs(body));
     onProgress?.((i + 1) / spine.length);
     if (!segments.length) continue;
     const heading = body.querySelector('h1,h2,h3')?.textContent?.replace(/\s+/g, ' ').trim();
-    chapters.push({ title: titles.get(path) || heading || `Chapitre ${chapters.length + 1}`, segments });
+    chapters.push({ title: titles.get(path) || heading || `Chapitre ${chapters.length + 1}`, segments, breaks });
   }
-  return { title, chapters };
+  return { title, author, chapters, coverBlob };
 }

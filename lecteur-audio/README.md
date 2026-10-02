@@ -1,41 +1,39 @@
-# 🎧 Lecteur Audio — PDF, Word, EPUB
+# 🎧 Muna Audio — vos documents en voix naturelle
 
-Application web installable (PWA) qui lit à voix haute vos **PDF**, documents **Word (.docx)** et livres **EPUB**,
-**y compris hors ligne**.
+Application installable (PWA) qui transforme vos **PDF**, documents **Word (.docx)** et livres **EPUB** en livres audio,
+lus par des voix neuronales naturelles — **entièrement hors ligne** et **sans que vos fichiers quittent l'appareil**.
 
 🌐 **En ligne : https://lecteur-audio-muna.netlify.app** — ouvrez-la sur votre téléphone puis « Installer l'application ».
 
-## Les voix
+## Ce que l'on obtient
 
-L'application propose **12 voix de narration** sélectionnées pour la lecture de livres, qui fonctionnent
-**entièrement hors ligne** une fois téléchargées (une seule fois, ~63–78 Mo par voix) :
+**Écoute**
+- 12 narrateurs (5 français, 7 anglais) + plus de 120 voix dans une trentaine de langues ; extrait à écouter avant téléchargement.
+- Écran « Lecture en cours » plein écran : couverture, ambiance colorée tirée du livre, position dans le chapitre, temps restant.
+- Mini-lecteur toujours accessible, contrôles sur l'écran verrouillé et le casque (pochette incluse).
+- Vitesse de 0,5× à 2,5× (instantanée, sans changer la hauteur de la voix).
+- Minuterie de sommeil (5 à 60 min ou fin du chapitre) avec fondu du son.
+- Reprise automatique là où vous vous étiez arrêté, pour chaque document.
 
-| Langue | Voix |
-|---|---|
-| 🇫🇷 Français | **Siwis** ♀ · **Jessica** ♀ · **Pierre** ♂ · **Tom** ♂ · **Miro** ♂ |
-| 🇬🇧🇺🇸 English | **Cori** ♀ (GB) · **Jenny** ♀ (GB) · **Lessac** ♀ (US) · **Eleanor** ♀ (US) · **Ryan** ♂ (US) · **Alan** ♂ (GB) · **Arthur** ♂ (US) |
+**Lecture**
+- Texte mis en page (paragraphes, typographie Literata), passage en cours surligné, défilement qui suit la voix.
+- Touchez une phrase pour l'écouter ; bouton « Revenir à la lecture » si vous faites défiler.
+- Chapitres avec progression et durée, signets, recherche dans le document.
+- Thèmes Clair / Sépia / Sombre / Auto, taille du texte réglable.
 
-- Chaque voix a un **extrait à écouter avant de la télécharger**.
-- *Eleanor* et *Arthur* sont des narrateurs « originaux » choisis parmi les 904 lecteurs de livres audio LibriVox
-  du modèle LibriTTS-R, après analyse acoustique de chacun (hauteur, expressivité, netteté).
-- L'intelligibilité des voix françaises a été vérifiée par transcription automatique (ElevenLabs Scribe).
-- Seuls des modèles assez rapides pour lire en continu sur un téléphone ont été retenus.
-- Plus de 100 autres voix (une trentaine de langues) restent accessibles dans « Plus de voix ».
-- Les **voix de l'appareil** (Android / iOS / Windows / macOS) sont aussi disponibles, sans téléchargement.
+**Bibliothèque**
+- Vraies couvertures (image de l'EPUB, 1re page du PDF) ou couverture générée élégante.
+- Carte « Reprendre », statistiques d'écoute (minutes du jour, jours d'affilée).
+- **« Partager → Muna Audio »** depuis WhatsApp, Gmail ou le gestionnaire de fichiers (Android).
+- « Ouvrir avec Muna Audio » sur ordinateur.
 
-> Pourquoi pas ElevenLabs ? Ses voix sont générées sur ses serveurs : impossible de les utiliser hors ligne
-> sans payer d'avance la génération de chaque livre. Les voix ci-dessus tournent directement sur l'appareil, gratuitement.
+## Performances
 
-## Fonctionnalités
-
-- Import PDF, DOCX, EPUB (et TXT) par bouton ou glisser-déposer — les fichiers restent sur l'appareil.
-- Découpage automatique en chapitres (table des matières EPUB/PDF, titres Word).
-- Texte affiché avec le passage en cours surligné ; touchez une phrase pour y sauter.
-- Reprise automatique là où vous vous êtes arrêté, pour chaque document.
-- Vitesse 0,75× à 2×, chapitre/passage précédent-suivant, raccourcis clavier (Espace, ← →).
-- Contrôles sur l'écran verrouillé / casque (Media Session).
-- **Export** d'un chapitre en fichier audio WAV.
-- Mode sombre automatique.
+- **Synthèse multi-cœurs** : grâce à l'isolation cross-origin (en-têtes `COOP`/`COEP`, fichier `public/_headers`),
+  le moteur utilise jusqu'à 4 cœurs — **10 s d'audio générées en ~1 s** au lieu de ~2,8 s.
+- La voix et le phonémiseur sont **préchargés** à l'ouverture d'un livre ; passages courts (≤ 260 caractères)
+  pour un démarrage rapide ; les 3 passages suivants sont préparés pendant l'écoute.
+- Interface légère (≈ 35 Ko compressés) ; les analyseurs PDF/Word/EPUB ne sont chargés qu'à l'import.
 
 ## Lancer en local
 
@@ -44,41 +42,44 @@ cd lecteur-audio
 npm install
 npm run dev        # développement : http://localhost:5173
 npm run build      # version de production dans dist/
-npm run preview    # tester la version de production
+npm run preview    # tester la version de production (avec les en-têtes d'isolation)
 ```
 
-## Mettre en ligne et installer sur téléphone
+## Mettre en ligne
 
-1. Déployez le dossier `dist/` sur n'importe quel hébergement statique **en HTTPS**
-   (Netlify, Vercel, GitHub Pages, Cloudflare Pages…).
-2. Ouvrez l'adresse sur le téléphone :
-   - **Android (Chrome)** : menu ⋮ → « Installer l'application ».
-   - **iPhone (Safari)** : Partager → « Sur l'écran d'accueil ».
-3. Au premier lancement (avec Internet), écoutez les extraits et téléchargez une ou plusieurs voix dans ⚙︎ Réglages.
-   Ensuite, l'application, la voix et vos documents fonctionnent **en mode avion**.
+Déployez le dossier `dist/` sur un hébergement statique **en HTTPS** qui applique le fichier `_headers`
+(Netlify le fait automatiquement ; `netlify.toml` contient la même configuration pour un déploiement Git).
+Sans ces en-têtes, l'application fonctionne mais la synthèse n'utilise qu'un cœur.
+
+## Les voix
+
+| Langue | Narrateurs |
+|---|---|
+| 🇫🇷 Français | **Siwis** ♀ · **Jessica** ♀ · **Pierre** ♂ · **Tom** ♂ · **Miro** ♂ |
+| 🇬🇧🇺🇸 English | **Cori** ♀ (GB) · **Jenny** ♀ (GB) · **Lessac** ♀ (US) · **Eleanor** ♀ (US) · **Ryan** ♂ (US) · **Alan** ♂ (GB) · **Arthur** ♂ (US) |
+
+Modèles Piper (licences libres), téléchargés une fois (60–80 Mo) depuis `huggingface.co/rhasspy/piper-voices`
+avec un miroir de secours, puis conservés sur l'appareil. *Eleanor* et *Arthur* ont été choisis parmi les 904 lecteurs
+LibriVox du modèle LibriTTS-R par analyse acoustique.
 
 ## Limites connues
 
 - PDF scannés (images sans texte) : il faut d'abord les passer à l'OCR.
 - Anciens fichiers Word `.doc` : enregistrez-les en `.docx`.
-- La voix est générée sur l'appareil : sur un téléphone ancien, le premier passage peut prendre quelques secondes
-  (les passages suivants sont préparés en avance pendant la lecture).
-- Les voix sont téléchargées depuis le dépôt officiel Piper (`huggingface.co/rhasspy/piper-voices`).
+- Le partage vers l'application est disponible sur Android (Chrome) ; iOS ne le permet pas aux applications web.
 
 ## Architecture
 
 ```
 src/
-├── main.ts              Interface (bibliothèque, lecteur, réglages)
-├── player.ts            Lecture enchaînée, préchargement, cache, Media Session
-├── offline.ts           Export audio d'un chapitre
-├── voices.ts            Catalogue des 12 voix de narration
-├── parsers/             Extraction du texte : pdf.ts (pdf.js), docx.ts (mammoth), epub.ts (JSZip)
-├── engines/
-│   └── piper.ts         Téléchargement des voix et synthèse (piper.worker.ts : onnxruntime-web + espeak-ng en WASM)
-├── db.ts                IndexedDB : bibliothèque de documents
-└── settings.ts          Préférences (localStorage)
+├── main.tsx             Point d'entrée, fichiers partagés / ouverts avec l'application
+├── sw.ts                Service worker : hors ligne + réception des partages
+├── ui/                  Interface (Preact) : accueil, lecture, lecteur, feuilles, accueil guidé
+├── player.ts            Lecture enchaînée, préchargement, minuterie, estimations, Media Session
+├── parsers/             Extraction texte + couverture : pdf.ts (pdf.js), docx.ts (mammoth), epub.ts (JSZip)
+├── engines/piper.ts     Téléchargement des voix et synthèse (piper.worker.ts : onnxruntime-web + espeak-ng)
+├── covers.ts            Couvertures et couleur d'ambiance
+├── stats.ts             Statistiques d'écoute
+├── voices.ts            Catalogue des 12 narrateurs
+└── db.ts                IndexedDB : bibliothèque
 ```
-
-Le service worker (vite-plugin-pwa / Workbox) met en cache l'application et les moteurs WASM ;
-les modèles de voix sont stockés dans le Cache Storage du navigateur (`public/samples/` contient les extraits).

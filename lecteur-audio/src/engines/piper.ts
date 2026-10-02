@@ -1,7 +1,6 @@
-import { HF_BASE, PATH_MAP, voices as listVoices } from '@mintplex-labs/piper-tts-web';
-import type { Voice as PiperVoice } from '@mintplex-labs/piper-tts-web';
 import { MODEL_CACHE } from './model-cache';
-import { CATALOG, type CatalogVoice } from '../voices';
+import PIPER_VOICES from './piper-voices.json';
+import { CATALOG } from '../voices';
 
 /** Une voix jouable : un modèle Piper et, s'il en contient plusieurs, un locuteur. */
 export interface VoiceRef {
@@ -11,6 +10,20 @@ export interface VoiceRef {
   label: string;
 }
 
+export interface PiperVoiceInfo {
+  id: string;
+  name: string;
+  language: string;
+  quality: string;
+  speakers: number;
+  sizeMb: number;
+  /** Chemin sur le miroir de secours. */
+  mirror: string;
+}
+
+export const ALL_VOICES = PIPER_VOICES as PiperVoiceInfo[];
+const KNOWN = new Set([...ALL_VOICES.map((v) => v.id), ...CATALOG.map((c) => c.model)]);
+
 export const DEFAULT_VOICE = CATALOG[0].id;
 
 /** `key` est soit l'id d'une voix du catalogue, soit `modèle` ou `modèle#locuteur`. */
@@ -18,12 +31,16 @@ export function resolveVoice(key: string): VoiceRef {
   const c = CATALOG.find((v) => v.id === key);
   if (c) return { key, model: c.model, speaker: c.speaker ?? 0, label: c.name };
   const [model, spk] = key.split('#');
-  if (model in PATH_MAP || CATALOG.some((c) => c.model === model)) return { key, model, speaker: Number(spk ?? 0), label: model.split('-')[1] ?? model };
+  if (KNOWN.has(model)) {
+    const name = model.split('-')[1] ?? model;
+    return { key, model, speaker: Number(spk ?? 0), label: name.charAt(0).toUpperCase() + name.slice(1).replace(/_/g, ' ') };
+  }
   return resolveVoice(DEFAULT_VOICE);
 }
 
 /** Dépôt officiel des voix Piper. */
 const VOICES_BASE = 'https://huggingface.co/rhasspy/piper-voices/resolve/main';
+const MIRROR_BASE = 'https://huggingface.co/diffusionstudio/piper-voices/resolve/main';
 
 /** `fr_FR-siwis-medium` → `…/fr/fr_FR/siwis/medium/fr_FR-siwis-medium.onnx` */
 export function modelUrl(model: string) {
@@ -34,7 +51,8 @@ export function modelUrl(model: string) {
 /** Sources de téléchargement, dans l'ordre : dépôt officiel, puis miroir. */
 function modelSources(model: string): string[] {
   const sources = [modelUrl(model)];
-  if (model in PATH_MAP) sources.push(`${HF_BASE}/${PATH_MAP[model]}`);
+  const mirror = ALL_VOICES.find((v) => v.id === model)?.mirror;
+  if (mirror) sources.push(`${MIRROR_BASE}/${mirror}`);
   return sources;
 }
 
@@ -55,36 +73,6 @@ async function fetchWithProgress(url: string, onProgress?: (ratio: number) => vo
   return new Blob(chunks as BlobPart[]);
 }
 
-export interface OtherVoice {
-  id: string;
-  name: string;
-  language: string;
-  quality: string;
-  sizeMb: number;
-}
-
-let otherList: OtherVoice[] | null = null;
-
-/** Toutes les voix Piper (plus de 100, une trentaine de langues). */
-export async function allPiperVoices(): Promise<OtherVoice[]> {
-  if (otherList) return otherList;
-  const all: PiperVoice[] = await listVoices();
-  otherList = all
-    .filter((v) => v.key in PATH_MAP)
-    .map((v) => {
-      const onnx = Object.entries(v.files).find(([k]) => k.endsWith('.onnx'));
-      return {
-        id: v.key,
-        name: v.name.replace(/_/g, ' '),
-        language: `${v.language.name_native} (${v.language.country_english})`,
-        quality: v.quality,
-        sizeMb: Math.round((onnx?.[1].size_bytes ?? 0) / 1e6),
-      };
-    })
-    .sort((a, b) => a.id.localeCompare(b.id));
-  return otherList;
-}
-
 export async function isModelDownloaded(model: string): Promise<boolean> {
   const cache = await caches.open(MODEL_CACHE);
   return !!(await cache.match(modelUrl(model))) && !!(await cache.match(modelUrl(model) + '.json'));
@@ -93,10 +81,19 @@ export async function isModelDownloaded(model: string): Promise<boolean> {
 export async function downloadedModels(): Promise<Set<string>> {
   const cache = await caches.open(MODEL_CACHE);
   const urls = new Set((await cache.keys()).map((r) => r.url));
-  return new Set([...Object.keys(PATH_MAP), ...CATALOG.map((c) => c.model)].filter((m) => urls.has(modelUrl(m)) && urls.has(modelUrl(m) + '.json')));
+  return new Set([...KNOWN].filter((m) => urls.has(modelUrl(m)) && urls.has(modelUrl(m) + '.json')));
 }
 
 const inFlight = new Map<string, { promise: Promise<void>; listeners: Set<(r: number) => void> }>();
+
+/** Téléchargements en cours (pour afficher la progression partout). */
+export const downloadProgress = new Map<string, number>();
+const progressListeners = new Set<() => void>();
+export function onDownloadProgress(fn: () => void) {
+  progressListeners.add(fn);
+  return () => progressListeners.delete(fn);
+}
+const notifyProgress = () => progressListeners.forEach((fn) => fn());
 
 function explain(err: unknown, source: string): string {
   const host = new URL(source).host;
@@ -106,13 +103,15 @@ function explain(err: unknown, source: string): string {
 }
 
 /** Télécharge un modèle une seule fois, même si plusieurs écrans le demandent en même temps. */
-export function downloadModel(model: string, onProgress: (ratio: number) => void): Promise<void> {
+export function downloadModel(model: string, onProgress?: (ratio: number) => void): Promise<void> {
   const running = inFlight.get(model);
   if (running) {
-    running.listeners.add(onProgress);
+    if (onProgress) running.listeners.add(onProgress);
     return running.promise;
   }
-  const listeners = new Set([onProgress]);
+  const listeners = new Set<(r: number) => void>(onProgress ? [onProgress] : []);
+  downloadProgress.set(model, 0);
+  notifyProgress();
   const promise = (async () => {
     const cache = await caches.open(MODEL_CACHE);
     const key = modelUrl(model);
@@ -120,7 +119,11 @@ export function downloadModel(model: string, onProgress: (ratio: number) => void
     for (const source of modelSources(model)) {
       try {
         const json = await fetchWithProgress(source + '.json');
-        const onnx = await fetchWithProgress(source, (r) => listeners.forEach((l) => l(r)));
+        const onnx = await fetchWithProgress(source, (r) => {
+          downloadProgress.set(model, r);
+          notifyProgress();
+          listeners.forEach((l) => l(r));
+        });
         // Toujours rangé sous l'adresse officielle, quelle que soit la source utilisée.
         await cache.put(key + '.json', new Response(json, { headers: { 'Content-Type': 'application/json' } }));
         await cache.put(key, new Response(onnx, { headers: { 'Content-Type': 'application/octet-stream' } }));
@@ -129,8 +132,12 @@ export function downloadModel(model: string, onProgress: (ratio: number) => void
         errors.push(explain(err, source));
       }
     }
-    throw new Error(`Téléchargement de la voix impossible — ${[...new Set(errors)].join(" ; ")}.`);
-  })().finally(() => inFlight.delete(model));
+    throw new Error(`Téléchargement de la voix impossible — ${[...new Set(errors)].join(' ; ')}.`);
+  })().finally(() => {
+    inFlight.delete(model);
+    downloadProgress.delete(model);
+    notifyProgress();
+  });
   inFlight.set(model, { promise, listeners });
   return promise;
 }
@@ -139,11 +146,12 @@ export async function deleteModel(model: string) {
   const cache = await caches.open(MODEL_CACHE);
   await cache.delete(modelUrl(model));
   await cache.delete(modelUrl(model) + '.json');
+  notifyProgress();
 }
 
 let worker: Worker | null = null;
 let nextId = 1;
-const pending = new Map<number, { resolve: (b: Blob) => void; reject: (e: Error) => void }>();
+const pending = new Map<number, { resolve: (b: Blob | null) => void; reject: (e: Error) => void }>();
 
 function getWorker(): Worker {
   if (!worker) {
@@ -152,20 +160,29 @@ function getWorker(): Worker {
       const p = pending.get(e.data.id);
       if (!p) return;
       pending.delete(e.data.id);
-      if (e.data.blob) p.resolve(e.data.blob);
-      else p.reject(new Error(e.data.error ?? 'Erreur de synthèse vocale'));
+      if (e.data.error) p.reject(new Error(e.data.error));
+      else p.resolve(e.data.blob ?? null);
     };
   }
   return worker;
 }
 
-export function synthesize(text: string, voiceKey: string): Promise<Blob> {
-  const v = resolveVoice(voiceKey);
+function send(msg: Record<string, unknown>): Promise<Blob | null> {
   const id = nextId++;
   return new Promise((resolve, reject) => {
     pending.set(id, { resolve, reject });
-    getWorker().postMessage({ id, text, modelUrl: modelUrl(v.model), speaker: v.speaker });
+    getWorker().postMessage({ ...msg, id });
   });
 }
 
-export type { CatalogVoice };
+export async function synthesize(text: string, voiceKey: string): Promise<Blob> {
+  const v = resolveVoice(voiceKey);
+  return (await send({ type: 'speak', text, modelUrl: modelUrl(v.model), speaker: v.speaker }))!;
+}
+
+/** Précharge le modèle et le phonémiseur pour que la première phrase parte tout de suite. */
+export async function warmUp(voiceKey: string) {
+  const v = resolveVoice(voiceKey);
+  if (!(await isModelDownloaded(v.model))) return;
+  await send({ type: 'warm', modelUrl: modelUrl(v.model) }).catch(() => {});
+}

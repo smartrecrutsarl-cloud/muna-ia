@@ -1,6 +1,6 @@
 # 🤖 Muna IA — Backend
 
-> 🎧 Ce dépôt contient aussi **[Lecteur Audio](lecteur-audio/)** : une application hors ligne qui lit vos PDF, Word et EPUB à voix haute.
+> 🎧 Ce dépôt contient aussi **[Muna Audio](lecteur-audio/)** : une application hors ligne qui lit vos PDF, Word et EPUB avec des voix naturelles.
 
 > Assistant recrutement intelligent via WhatsApp · Cameroun & CEMAC
 

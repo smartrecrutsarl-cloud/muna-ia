@@ -1,12 +1,13 @@
 import type { LibraryDoc } from '../db';
-import { normalize, toSegments } from '../segment';
+import { normalize, toParagraphs } from '../segment';
+import { coverFromImage, fromSource, generatedCover } from '../covers';
 
 export const ACCEPT = '.pdf,.docx,.epub,.txt';
 
 export async function parseFile(file: File, onProgress?: (p: number) => void): Promise<LibraryDoc> {
   const ext = file.name.toLowerCase().split('.').pop() ?? '';
   const data = await file.arrayBuffer();
-  let result: { title?: string; chapters: LibraryDoc['chapters'] };
+  let result: { title?: string; author?: string; chapters: LibraryDoc['chapters']; coverBlob?: Blob; coverCanvas?: HTMLCanvasElement };
   let format: LibraryDoc['format'];
 
   switch (ext) {
@@ -24,7 +25,7 @@ export async function parseFile(file: File, onProgress?: (p: number) => void): P
       break;
     case 'txt':
       format = 'txt';
-      result = { chapters: [{ title: 'Texte', segments: toSegments(normalize(new TextDecoder().decode(data)).split(/\n+/)) }] };
+      result = { chapters: [{ title: 'Texte', ...toParagraphs(normalize(new TextDecoder().decode(data)).split(/\n+/)) }] };
       break;
     case 'doc':
       throw new Error('Les anciens fichiers .doc ne sont pas pris en charge : enregistrez-le en .docx depuis Word.');
@@ -36,9 +37,18 @@ export async function parseFile(file: File, onProgress?: (p: number) => void): P
   if (!chapters.length) {
     throw new Error("Aucun texte trouvé. S'il s'agit d'un PDF scanné (images), il faut d'abord le passer à l'OCR.");
   }
+  const title = result.title || file.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ');
+  const art =
+    (result.coverBlob && (await coverFromImage(result.coverBlob))) ||
+    (result.coverCanvas && fromSource(result.coverCanvas, result.coverCanvas.width, result.coverCanvas.height)) ||
+    (await generatedCover(title, result.author, format));
   return {
     id: crypto.randomUUID(),
-    title: result.title || file.name.replace(/\.[^.]+$/, ''),
+    title,
+    author: result.author,
+    cover: art.cover,
+    color: art.color,
+    bookmarks: [],
     format,
     addedAt: Date.now(),
     chapters,

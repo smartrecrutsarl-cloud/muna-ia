@@ -2,24 +2,39 @@
 
 export interface Chapter {
   title: string;
-  /** Segments de texte prêts à être lus (quelques phrases chacun). */
+  /** Segments de texte prêts à être lus (une ou quelques phrases chacun). */
   segments: string[];
+  /** Indices des segments qui commencent un paragraphe (mise en page). */
+  breaks?: number[];
+}
+
+export interface Bookmark {
+  chapter: number;
+  segment: number;
+  excerpt: string;
+  createdAt: number;
 }
 
 export interface LibraryDoc {
   id: string;
   title: string;
+  author?: string;
   format: 'pdf' | 'docx' | 'epub' | 'txt';
   addedAt: number;
+  lastOpenedAt?: number;
   chapters: Chapter[];
   /** Position de lecture : chapitre + segment. */
   position: { chapter: number; segment: number };
   totalSegments: number;
+  /** Couverture (JPEG en data URL) et couleur dominante. */
+  cover?: string;
+  color?: string;
+  bookmarks?: Bookmark[];
+  finishedAt?: number;
 }
 
 const DB_NAME = 'lecteur-audio';
 const DOCS = 'docs';
-const AUDIO = 'audio';
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -28,8 +43,8 @@ function open(): Promise<IDBDatabase> {
     const req = indexedDB.open(DB_NAME, 1);
     req.onupgradeneeded = () => {
       const db = req.result;
-      db.createObjectStore(DOCS, { keyPath: 'id' });
-      db.createObjectStore(AUDIO);
+      if (!db.objectStoreNames.contains(DOCS)) db.createObjectStore(DOCS, { keyPath: 'id' });
+      if (!db.objectStoreNames.contains('audio')) db.createObjectStore('audio');
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);

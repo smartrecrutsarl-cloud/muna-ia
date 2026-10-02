@@ -1,6 +1,7 @@
 import { DEFAULT_VOICE } from './engines/piper';
 
 export type EngineId = 'piper' | 'system';
+export type Theme = 'auto' | 'light' | 'sepia' | 'dark';
 
 export interface Settings {
   engine: EngineId;
@@ -8,6 +9,12 @@ export interface Settings {
   /** Voix du catalogue (id) ou voix Piper libre (`modèle` / `modèle#locuteur`). */
   piperVoice: string;
   systemVoice: string;
+  theme: Theme;
+  /** Taille du texte de lecture (1 = normale). */
+  fontScale: number;
+  /** Faire défiler le texte pour suivre la lecture. */
+  follow: boolean;
+  onboarded: boolean;
 }
 
 const KEY = 'lecteur-audio:settings';
@@ -17,6 +24,10 @@ const defaults: Settings = {
   rate: 1,
   piperVoice: DEFAULT_VOICE,
   systemVoice: '',
+  theme: 'auto',
+  fontScale: 1,
+  follow: true,
+  onboarded: false,
 };
 
 function load(): Settings {
@@ -32,8 +43,15 @@ function load(): Settings {
 
 export const settings: Settings = load();
 
+const listeners = new Set<() => void>();
+export function onSettings(fn: () => void) {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
 export function saveSettings(patch: Partial<Settings>) {
   Object.assign(settings, patch);
+  listeners.forEach((fn) => fn());
   try {
     localStorage.setItem(KEY, JSON.stringify(settings));
   } catch {

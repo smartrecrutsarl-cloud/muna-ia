@@ -2,7 +2,7 @@ import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 import workerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 import type { PDFDocumentProxy } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import type { Chapter } from '../db';
-import { toSegments } from '../segment';
+import { toParagraphs } from '../segment';
 
 pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
@@ -74,7 +74,19 @@ export async function parsePdf(data: ArrayBuffer, onProgress?: (p: number) => vo
   const task = pdfjs.getDocument({ data });
   const pdf = await task.promise;
   const meta = await pdf.getMetadata().catch(() => null);
-  const info = meta?.info as { Title?: string } | undefined;
+  const info = meta?.info as { Title?: string; Author?: string } | undefined;
+  let coverCanvas: HTMLCanvasElement | undefined;
+  try {
+    const first = await pdf.getPage(1);
+    const vp = first.getViewport({ scale: 1 });
+    const viewport = first.getViewport({ scale: 480 / vp.width });
+    coverCanvas = document.createElement('canvas');
+    coverCanvas.width = Math.round(viewport.width);
+    coverCanvas.height = Math.round(viewport.height);
+    await first.render({ canvasContext: coverCanvas.getContext('2d')!, viewport }).promise;
+  } catch {
+    coverCanvas = undefined;
+  }
 
   const pages: string[][] = [];
   for (let i = 1; i <= pdf.numPages; i++) {
@@ -97,11 +109,13 @@ export async function parsePdf(data: ArrayBuffer, onProgress?: (p: number) => vo
   if (ranges.length === 1) ranges[0].title = 'Document';
   const chapters: Chapter[] = ranges.map((r, i) => {
     const end = i + 1 < ranges.length ? ranges[i + 1].page - 1 : pdf.numPages;
-    return {
-      title: r.title || `Pages ${r.page}–${end}`,
-      segments: toSegments(pages.slice(r.page - 1, end).flat()),
-    };
+    return { title: r.title || `Pages ${r.page}–${end}`, ...toParagraphs(pages.slice(r.page - 1, end).flat()) };
   });
   await task.destroy();
-  return { title: info?.Title?.trim() || undefined, chapters: chapters.filter((c) => c.segments.length) };
+  return {
+    title: info?.Title?.trim() || undefined,
+    author: info?.Author?.trim() || undefined,
+    chapters: chapters.filter((c) => c.segments.length),
+    coverCanvas,
+  };
 }
