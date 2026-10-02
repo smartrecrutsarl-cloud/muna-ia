@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
-import { Check, Download, Pause, Play, Trash2 } from 'lucide-preact';
+import { Check, Download, Lock, Pause, Play, Trash2 } from 'lucide-preact';
 import { ALL_VOICES, deleteModel, downloadModel, downloadProgress, downloadedModels, resolveVoice } from '../engines/piper';
 import { player } from '../player';
 import { saveSettings } from '../settings';
 import { CATALOG, type CatalogVoice } from '../voices';
 import { ProgressRing, Segmented } from './common';
 import { fold } from './format';
-import { online, toast, useDownloads, useSettings } from './store';
+import { online, showPaywall, toast, useDownloads, useSettings } from './store';
+import { canUseVoice, FREE_VOICES, MONETIZED, onTrial, premium } from '../premium';
 
 // Un seul extrait joué à la fois, dans toute l'application.
 const sampleAudio = new Audio();
@@ -64,6 +65,10 @@ function Avatar({ v }: { v: CatalogVoice }) {
 }
 
 async function choose(key: string, model: string, have: Set<string>, refresh: () => void) {
+  if (!canUseVoice(key)) {
+    showPaywall('voice');
+    return;
+  }
   saveSettings({ piperVoice: key, engine: 'piper' });
   player.settingsChanged();
   if (!have.has(model)) {
@@ -100,22 +105,30 @@ export function VoicePicker({ compact = false }: { compact?: boolean }) {
           const selected = settings.engine === 'piper' && settings.piperVoice === v.id;
           const progress = downloadProgress.get(v.model);
           const ready = have.has(v.model);
+          const free = FREE_VOICES.has(v.id);
+          const locked = !free && !premium.value;
           return (
             <li key={v.id} class={`voice-card ${selected ? 'selected' : ''}`} onClick={() => choose(v.id, v.model, have, refresh)}>
               <Avatar v={v} />
               <div class="voice-info">
                 <div class="voice-name">
                   {v.name}
-                  <span class="voice-tag">{v.gender === 'f' ? 'Féminine' : 'Masculine'}</span>
+                  {MONETIZED && (free ? <span class="voice-tag free">Gratuite</span> : <span class="voice-tag pro">Premium</span>)}
                 </div>
-                <div class="voice-meta">{v.accent}</div>
+                <div class="voice-meta">
+                  {v.gender === 'f' ? 'Féminine' : 'Masculine'} · {v.accent}
+                </div>
                 {!compact && <div class="voice-desc">{v.description}</div>}
               </div>
               <div class="voice-actions" onClick={(e) => e.stopPropagation()}>
                 <button class="icon-btn soft" aria-label={`Écouter ${v.name}`} onClick={() => sample.toggle(v.id)}>
                   {sample.playing === v.id ? <Pause size={18} /> : <Play size={18} />}
                 </button>
-                {progress !== undefined ? (
+                {locked ? (
+                  <button class="icon-btn soft" aria-label={`${v.name} : voix Premium`} onClick={() => showPaywall('voice')}>
+                    <Lock size={17} />
+                  </button>
+                ) : progress !== undefined ? (
                   <ProgressRing value={progress} size={36}>
                     <span class="ring-pct">{Math.round(progress * 100)}</span>
                   </ProgressRing>
@@ -137,6 +150,7 @@ export function VoicePicker({ compact = false }: { compact?: boolean }) {
           );
         })}
       </ul>
+      {onTrial.value && <p class="trial-note">Toutes les voix Premium sont incluses pendant votre essai gratuit.</p>}
       {!compact && <MoreVoices have={have} refresh={refresh} />}
     </div>
   );
@@ -152,7 +166,9 @@ function MoreVoices({ have, refresh }: { have: Set<string>; refresh: () => void 
   }, [q]);
   return (
     <details class="more-voices" open={open} onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}>
-      <summary>Plus de 120 autres voix, dans une trentaine de langues</summary>
+      <summary>
+        Plus de 120 autres voix, dans une trentaine de langues {MONETIZED && <span class="voice-tag pro">Premium</span>}
+      </summary>
       {open && (
         <>
           <input class="input" type="search" placeholder="Rechercher : español, deutsch, arabic…" value={q} onInput={(e) => setQ((e.target as HTMLInputElement).value)} />

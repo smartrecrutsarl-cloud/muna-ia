@@ -2,6 +2,7 @@ import { docs, type LibraryDoc } from './db';
 import { downloadModel, isModelDownloaded, resolveVoice, synthesize, warmUp } from './engines/piper';
 import { settings, voiceSignature } from './settings';
 import { addListening } from './stats';
+import { canUseVoice } from './premium';
 
 export interface Pos {
   chapter: number;
@@ -95,6 +96,8 @@ export class Player {
   /** Message d'information temporaire (ex. téléchargement de la voix). */
   notice = '';
   sleep: SleepMode = { kind: 'off' };
+  /** Appelé quand la voix choisie demande Kalara Premium (l'interface ouvre l'offre). */
+  onPremiumRequired: () => void = () => {};
   /** Avancement (0–1) dans le passage en cours. */
   segmentFraction = 0;
 
@@ -367,6 +370,10 @@ export class Player {
   /** Télécharge la voix choisie si elle n'est pas encore sur l'appareil. */
   private async ensureVoice(token: number) {
     const voice = resolveVoice(settings.piperVoice);
+    if (!canUseVoice(settings.piperVoice)) {
+      this.onPremiumRequired();
+      throw new Error(`La voix ${voice.label} fait partie de Kalara Premium. Choisissez Jessica ou Pierre (gratuites) ou activez un pass.`);
+    }
     if (await isModelDownloaded(voice.model)) return;
     if (!navigator.onLine) {
       throw new Error(`La voix ${voice.label} n'est pas encore sur l'appareil : connectez-vous une fois à Internet pour la télécharger.`);

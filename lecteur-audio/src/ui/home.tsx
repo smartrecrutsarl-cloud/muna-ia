@@ -5,6 +5,7 @@ import { estimate, player, progressOf } from '../player';
 import { settings } from '../settings';
 import { streak, todaySeconds } from '../stats';
 import { Cover, Logo, pickFiles } from './common';
+import { PremiumBanner, PremiumPill } from './premium-ui';
 import { greeting, remaining } from './format';
 import { deleteDoc, importing, library, online, openBook, openSheet, usePlayer } from './store';
 
@@ -17,9 +18,10 @@ export function Home() {
       <header class="app-bar">
         <div class="brand">
           <Logo />
-          <span>Muna Audio</span>
+          <span>Kalara</span>
         </div>
         <div class="row gap-s">
+          <PremiumPill />
           {!online.value && (
             <span class="pill">
               <WifiOff size={14} /> Hors ligne
@@ -38,6 +40,8 @@ export function Home() {
         </section>
 
         {recent && <ContinueCard doc={recent} />}
+
+        <PremiumBanner />
 
         {docs.length > 0 && <StatsRow count={docs.length} />}
 
@@ -203,7 +207,7 @@ function EmptyState() {
       <button class="btn primary big" onClick={() => pickFiles((id) => id && openBook(id))}>
         <Plus size={20} /> Ajouter un document
       </button>
-      <p class="hint">Astuce : depuis WhatsApp ou vos fichiers, utilisez « Partager » → Muna Audio.</p>
+      <p class="hint">Astuce : depuis WhatsApp ou vos fichiers, utilisez « Partager » → Kalara.</p>
     </div>
   );
 }

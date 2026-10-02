@@ -7,9 +7,14 @@ import { parseFile } from '../parsers';
 import { player } from '../player';
 import { cleanText } from '../segment';
 import { onSettings, settings } from '../settings';
+import { canAddDocuments, FREE_DOC_LIMIT } from '../premium';
+
 
 export type Route = { name: 'home' } | { name: 'book'; id: string };
-export type SheetName = 'settings' | 'chapters' | 'search' | 'text' | 'sleep' | 'speed' | null;
+export type SheetName = 'settings' | 'chapters' | 'search' | 'text' | 'sleep' | 'speed' | 'premium' | null;
+export type PaywallReason = 'voice' | 'docs' | 'manual';
+/** Raison de l'affichage de l'offre Premium (adapte le message). */
+export const paywallReason = signal<PaywallReason>('manual');
 
 export const library = signal<LibraryDoc[]>([]);
 export const route = signal<Route>({ name: 'home' });
@@ -116,20 +121,34 @@ addEventListener('popstate', () => {
   else if (route.value.name !== 'home') goHome();
 });
 
+export function showPaywall(reason: PaywallReason) {
+  paywallReason.value = reason;
+  openSheet('premium');
+}
+
 export async function importFiles(files: File[] | FileList) {
   let last: LibraryDoc | null = null;
-  for (const file of Array.from(files)) {
+  let list = Array.from(files);
+  if (!canAddDocuments(library.value.length, list.length)) {
+    const room = Math.max(0, FREE_DOC_LIMIT - library.value.length);
+    list = list.slice(0, room);
+    showPaywall('docs');
+  }
+  const added: string[] = [];
+  for (const file of list) {
     try {
       importing.value = { name: file.name, progress: 0 };
       const doc = await parseFile(file, (p) => (importing.value = { name: file.name, progress: p }));
       await docs.put(doc);
       last = doc;
-      toast(`« ${doc.title} » ajouté à votre bibliothèque`, 'ok');
+      added.push(doc.title);
     } catch (err) {
       toast(`${file.name} : ${err instanceof Error ? err.message : String(err)}`, 'error');
     }
   }
   importing.value = null;
+  if (added.length === 1) toast(`« ${added[0]} » ajouté à votre bibliothèque`, 'ok');
+  else if (added.length > 1) toast(`${added.length} documents ajoutés à votre bibliothèque`, 'ok');
   await refreshLibrary();
   return last;
 }

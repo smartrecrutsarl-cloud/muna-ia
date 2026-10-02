@@ -40,9 +40,9 @@ export default defineConfig({
       },
       manifest: {
         id: './',
-        name: 'Muna Audio — vos documents en voix naturelle',
-        short_name: 'Muna Audio',
-        description: 'Écoutez vos PDF, documents Word et livres EPUB lus par des voix naturelles, même hors ligne.',
+        name: 'Kalara — vos documents, racontés',
+        short_name: 'Kalara',
+        description: 'Vos PDF, documents Word et livres EPUB racontés par des voix naturelles, même hors ligne.',
         lang: 'fr',
         theme_color: '#F6F3EE',
         background_color: '#F6F3EE',
@@ -56,14 +56,14 @@ export default defineConfig({
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
           { src: 'icon.svg', sizes: 'any', type: 'image/svg+xml' },
         ],
-        // « Partager → Muna Audio » depuis WhatsApp, les fichiers, etc. (Android).
+        // « Partager → Kalara » depuis WhatsApp, les fichiers, etc. (Android).
         share_target: {
           action: './share-target',
           method: 'POST',
           enctype: 'multipart/form-data',
           params: { title: 'title', text: 'text', files: [{ name: 'files', accept: [...Object.keys(DOC_TYPES), ...Object.values(DOC_TYPES).flat()] }] },
         },
-        // « Ouvrir avec Muna Audio » (ordinateur).
+        // « Ouvrir avec Kalara » (ordinateur).
         file_handlers: [{ action: './', accept: DOC_TYPES }],
       } as Record<string, unknown>,
     }),

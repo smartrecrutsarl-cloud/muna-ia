@@ -12,7 +12,7 @@ navigator.storage?.persist?.().catch(() => {});
 
 render(<App />, document.getElementById('app')!);
 
-/** Fichiers reçus via « Partager → Muna Audio » (Android) : déposés par le service worker. */
+/** Fichiers reçus via « Partager → Kalara » (Android) : déposés par le service worker. */
 async function importShared() {
   const params = new URLSearchParams(location.search);
   if (!params.has('shared')) return;

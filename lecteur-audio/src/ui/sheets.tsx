@@ -8,6 +8,8 @@ import { duration, fold } from './format';
 import { SPEEDS } from './player-ui';
 import { chaptersTab, closeSheet, usePlayer, useSettings } from './store';
 import { StorageInfo, VoicePicker } from './voices';
+import { SubscriptionCard } from './premium-ui';
+import { MONETIZED } from '../premium';
 
 export function ChaptersSheet() {
   usePlayer();
@@ -233,10 +235,17 @@ export function SettingsSheet() {
   const settings = useSettings();
   return (
     <Sheet title="Réglages" class="settings-sheet">
+      {MONETIZED && (
+        <section class="settings-section">
+          <h3>Mon abonnement</h3>
+          <SubscriptionCard />
+        </section>
+      )}
+
       <section class="settings-section">
         <h3>Voix de narration</h3>
         <p class="muted small">
-          Voix neuronales naturelles. Téléchargées une fois (≈ 60 Mo), elles fonctionnent ensuite <strong>sans Internet</strong>. Touchez ▶ pour écouter un extrait.
+          Voix neuronales naturelles. Téléchargées une fois (≈ 60 Mo), elles fonctionnent ensuite <strong>sans Internet</strong>. {MONETIZED && 'Jessica et Pierre sont gratuites. '}Touchez ▶ pour écouter un extrait.
         </p>
         <VoicePicker />
         <label class="toggle">
@@ -276,7 +285,7 @@ export function SettingsSheet() {
           <ShieldCheck size={16} /> Vos documents ne quittent jamais votre appareil : l'analyse et la voix sont produites localement.
         </p>
         <p>
-          <Headphones size={16} /> Muna Audio · version {__APP_VERSION__}
+          <Headphones size={16} /> Kalara · version {__APP_VERSION__} · une application Muna IA
         </p>
       </section>
     </Sheet>

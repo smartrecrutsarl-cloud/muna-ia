@@ -1,4 +1,4 @@
-/* ——— Muna Audio · système visuel ——— */
+/* ——— Kalara · système visuel ——— */
 
 :root,
 [data-theme='light'] {
@@ -1450,7 +1450,7 @@ mark {
   box-shadow: var(--shadow-lg);
   animation: rise 0.25s ease-out;
 }
-.toast.error {
+.toast.toast-error {
   background: #b93a28;
   color: #fff;
 }
@@ -1587,4 +1587,292 @@ mark {
   border-radius: 50%;
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   color: #fff;
+}
+
+/* ——— Premium ——— */
+.voice-tag.free {
+  background: color-mix(in srgb, #2e7d5b 16%, transparent);
+  color: #2e7d5b;
+}
+[data-theme='dark'] .voice-tag.free {
+  color: #7fd1a6;
+}
+.voice-tag.pro {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+}
+.trial-note {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  text-align: center;
+}
+.premium-pill {
+  border: 0;
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+}
+.pw-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  margin: -0.3rem 0 1.2rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  color: var(--text);
+  text-align: left;
+  font-size: 0.9rem;
+}
+.pw-banner svg {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.pw-banner strong {
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.premium-sheet .sheet-head {
+  padding-top: 0.2rem;
+  padding-bottom: 0;
+  margin-bottom: -2.4rem;
+  position: relative;
+  z-index: 1;
+}
+.pw-hero {
+  text-align: center;
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+}
+.pw-icon {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 20px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.pw-hero h2 {
+  font-size: 1.5rem;
+  line-height: 1.2;
+}
+.pw-hero p {
+  margin: 0;
+  color: var(--muted);
+}
+.pw-benefits {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+  font-size: 0.92rem;
+}
+.pw-benefits li {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+}
+.pw-benefits svg {
+  color: var(--accent);
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+.plans {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+  padding-top: 0.5rem;
+}
+.plan {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.15rem;
+  padding: 1rem 0.25rem 0.8rem;
+  border: 2px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  transition: border-color 0.15s, transform 0.1s;
+}
+.plan.active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+}
+.plan:active {
+  transform: scale(0.97);
+}
+.plan-badge {
+  position: absolute;
+  top: -0.7rem;
+  padding: 0.12rem 0.55rem;
+  border-radius: 99px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.plan-label {
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+.plan-price {
+  font-family: 'Fraunces Variable', serif;
+  font-size: clamp(0.85rem, 3.9vw, 1.12rem);
+  font-weight: 650;
+  white-space: nowrap;
+}
+.plan-sub {
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.2;
+}
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+.field-label-inline {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.phone {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.phone:focus-within {
+  border-color: var(--accent);
+}
+.phone-prefix {
+  padding: 0.8rem 0.4rem 0.8rem 1rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.phone input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.8rem 1rem 0.8rem 0.3rem;
+  border: 0;
+  background: transparent;
+  outline: none;
+  font-size: 1.05rem;
+  letter-spacing: 0.03em;
+}
+.pw-cta {
+  width: 100%;
+}
+.pw-cta:disabled {
+  opacity: 0.55;
+}
+.pw-error {
+  margin: 0;
+  color: #c0392b;
+  font-size: 0.85rem;
+  text-align: center;
+}
+.pw-secure {
+  display: flex;
+  gap: 0.4rem;
+  align-items: flex-start;
+  justify-content: center;
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+}
+.pw-secure svg {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+.restore {
+  display: flex;
+  gap: 0.5rem;
+}
+.restore .input {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.code-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0.7rem 1rem;
+  border: 2px dashed var(--accent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+  color: var(--text);
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.code-box svg {
+  color: var(--accent);
+}
+.pay-status {
+  display: grid;
+  justify-items: center;
+  gap: 0.8rem;
+  text-align: center;
+  padding: 1rem 0 0.5rem;
+}
+.pay-status h3 {
+  font-size: 1.35rem;
+}
+.pay-status p {
+  margin: 0;
+}
+.pay-status .spin {
+  color: var(--accent);
+}
+.pay-ok,
+.pay-ko {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  color: #fff;
+}
+.pay-ok {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+}
+.pay-ko {
+  background: #b93a28;
+}
+.sub-card {
+  display: grid;
+  gap: 0.8rem;
+  padding: 1rem;
+  border-radius: 18px;
+  background: var(--surface-2);
+}
+.sub-card.is-premium {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 14%, var(--surface)), color-mix(in srgb, var(--accent-2) 12%, var(--surface)));
+}
+.sub-head {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+}
+.sub-head svg {
+  color: var(--accent);
+}
+.sub-head strong {
+  display: block;
+}
+.sub-head small {
+  color: var(--muted);
 }

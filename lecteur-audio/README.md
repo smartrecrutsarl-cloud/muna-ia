@@ -1,9 +1,42 @@
-# 🎧 Muna Audio — vos documents en voix naturelle
+# 🎧 Kalara — vos documents, racontés
 
-Application installable (PWA) qui transforme vos **PDF**, documents **Word (.docx)** et livres **EPUB** en livres audio,
-lus par des voix neuronales naturelles — **entièrement hors ligne** et **sans que vos fichiers quittent l'appareil**.
+*Kalara* signifie « livre, papier, lettre » en ewondo. Application installable (PWA) qui transforme vos **PDF**,
+documents **Word (.docx)** et livres **EPUB** en livres audio, lus par des voix neuronales naturelles —
+**entièrement hors ligne** et **sans que vos fichiers quittent l'appareil**. Une application Muna IA.
 
 🌐 **En ligne : https://lecteur-audio-muna.netlify.app** — ouvrez-la sur votre téléphone puis « Installer l'application ».
+
+## Modèle économique : freemium + pass Mobile Money
+
+| | **Gratuit** | **Kalara Premium** |
+|---|---|---|
+| Voix | Jessica ♀ et Pierre ♂ (français) + voix de l'appareil | 12 narrateurs + 120 voix (30 langues) |
+| Bibliothèque | 3 documents | Illimitée |
+| Lecture hors ligne, minuterie, signets, chapitres, recherche | ✅ | ✅ |
+| Prix | 0 | **500 FCFA / 7 jours · 1 500 FCFA / mois · 12 000 FCFA / an** |
+
+- **7 jours de Premium offerts** au premier lancement.
+- **Pass prépayés**, payés par MTN MoMo ou Orange Money via CinetPay : jamais de prélèvement automatique.
+  Un nouveau pass acheté avec le même numéro s'ajoute à la suite du pass en cours.
+- **Licence signée** (ECDSA P-256) vérifiée par l'application **hors ligne** ; **code de restauration** `KAL-XXXX-XXXX`
+  pour retrouver son abonnement sur un autre téléphone.
+- Coût marginal quasi nul : la voix est produite sur le téléphone ; seules la commission CinetPay (≈ 2 %) et
+  l'hébergement comptent.
+- L'abonnement n'est actif que si l'application est construite avec `VITE_KALARA_API` ; sinon tout est accessible.
+
+### Activer le paiement
+
+1. **Supabase** → SQL Editor : exécuter `supabase-kalara.sql` (à la racine du dépôt).
+2. **Railway** (backend Muna IA) → Variables :
+   - `KALARA_LICENSE_PRIVATE_KEY` : clé privée qui signe les licences (générée avec `node scripts/kalara-keys.js` ;
+     la clé publique correspondante est dans `src/premium.ts`) ;
+   - `KALARA_APP_URL` : adresse de l'application (ex. `https://lecteur-audio-muna.netlify.app`) ;
+   - `APP_URL` : adresse publique du backend (sert d'adresse de retour après paiement) ;
+   - `CINETPAY_API_KEY`, `CINETPAY_SITE_ID`, `CINETPAY_NOTIFY_URL` (déjà utilisés par Muna IA).
+3. Construire l'application avec l'adresse de l'API :
+   ```bash
+   VITE_KALARA_API=https://<votre-backend>.up.railway.app/api/kalara npm run build
+   ```
 
 ## Ce que l'on obtient
 
@@ -24,8 +57,8 @@ lus par des voix neuronales naturelles — **entièrement hors ligne** et **sans
 **Bibliothèque**
 - Vraies couvertures (image de l'EPUB, 1re page du PDF) ou couverture générée élégante.
 - Carte « Reprendre », statistiques d'écoute (minutes du jour, jours d'affilée).
-- **« Partager → Muna Audio »** depuis WhatsApp, Gmail ou le gestionnaire de fichiers (Android).
-- « Ouvrir avec Muna Audio » sur ordinateur.
+- **« Partager → Kalara »** depuis WhatsApp, Gmail ou le gestionnaire de fichiers (Android).
+- « Ouvrir avec Kalara » sur ordinateur.
 
 ## Performances
 
@@ -81,5 +114,6 @@ src/
 ├── covers.ts            Couvertures et couleur d'ambiance
 ├── stats.ts             Statistiques d'écoute
 ├── voices.ts            Catalogue des 12 narrateurs
+├── premium.ts           Essai, licences signées (vérifiées hors ligne), droits, paiement CinetPay
 └── db.ts                IndexedDB : bibliothèque
 ```

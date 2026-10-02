@@ -13,8 +13,8 @@ const CINETPAY_API = 'https://api-checkout.cinetpay.com/v2/payment';
  * @param {object} params.metadata - Données à retrouver dans le webhook
  * @returns {{ paymentUrl: string, transactionId: string }}
  */
-async function createPaymentLink({ amount, description, whatsappNumber, metadata = {} }) {
-  const transactionId = `MUNA-${Date.now()}-${uuidv4().substring(0, 8).toUpperCase()}`;
+async function createPaymentLink({ amount, description, whatsappNumber, metadata = {}, transactionId: forcedId, returnUrl, customerName }) {
+  const transactionId = forcedId || `MUNA-${Date.now()}-${uuidv4().substring(0, 8).toUpperCase()}`;
 
   const payload = {
     apikey: config.cinetpay.apiKey,
@@ -24,11 +24,11 @@ async function createPaymentLink({ amount, description, whatsappNumber, metadata
     currency: 'XAF', // FCFA
     description,
     notify_url: config.cinetpay.notifyUrl,
-    return_url: config.cinetpay.returnUrl,
+    return_url: returnUrl || config.cinetpay.returnUrl,
     channels: 'MOBILE_MONEY', // MTN + Orange Money
     lang: 'fr',
     metadata: JSON.stringify({ whatsappNumber, ...metadata }),
-    customer_name: 'Client Muna IA',
+    customer_name: customerName || 'Client Muna IA',
     customer_surname: '',
     customer_phone_number: whatsappNumber,
     customer_email: 'client@muna-ia.cm',
@@ -80,6 +80,27 @@ async function checkPaymentStatus(transactionId) {
 }
 
 /**
+ * Détails d'une transaction (statut, montant, devise) vérifiés auprès de CinetPay.
+ * @param {string} transactionId
+ * @returns {Promise<{ status: string, amount: number, currency: string } | null>}
+ */
+async function getPaymentDetails(transactionId) {
+  try {
+    const response = await axios.post('https://api-checkout.cinetpay.com/v2/payment/check', {
+      apikey: config.cinetpay.apiKey,
+      site_id: config.cinetpay.siteId,
+      transaction_id: transactionId,
+    });
+    const d = response.data?.data;
+    if (!d) return null;
+    return { status: d.status || 'PENDING', amount: Number(d.amount) || 0, currency: d.currency || '' };
+  } catch (err) {
+    console.error('[CinetPay] Erreur vérification:', err.response?.data || err.message);
+    return null;
+  }
+}
+
+/**
  * Formate un message WhatsApp avec le lien de paiement
  * @param {string} paymentUrl
  * @param {number} amount
@@ -93,4 +114,4 @@ function formatPaymentMessage(paymentUrl, amount, description) {
     `✅ Votre rapport sera envoyé automatiquement dès confirmation du paiement.`;
 }
 
-module.exports = { createPaymentLink, checkPaymentStatus, formatPaymentMessage };
+module.exports = { createPaymentLink, checkPaymentStatus, getPaymentDetails, formatPaymentMessage };

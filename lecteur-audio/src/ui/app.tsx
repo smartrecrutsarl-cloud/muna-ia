@@ -6,7 +6,9 @@ import { Onboarding } from './onboarding';
 import { MiniPlayer, NowPlaying } from './player-ui';
 import { Reader } from './reader';
 import { ChaptersSheet, SearchSheet, SettingsSheet, SleepSheet, SpeedSheet, TextSheet } from './sheets';
-import { nowPlaying, refreshLibrary, route, sheet, usePlayer, useSettings } from './store';
+import { checkPendingPayment, PremiumSheet } from './premium-ui';
+import { ready as premiumReady } from '../premium';
+import { nowPlaying, refreshLibrary, route, sheet, showPaywall, usePlayer, useSettings } from './store';
 
 function applyTheme(theme: string) {
   const dark = matchMedia('(prefers-color-scheme: dark)').matches;
@@ -22,6 +24,8 @@ export function App() {
 
   useEffect(() => {
     void refreshLibrary();
+    player.onPremiumRequired = () => showPaywall('voice');
+    void premiumReady.then(checkPendingPayment);
   }, []);
   useEffect(() => {
     applyTheme(settings.theme);
@@ -45,7 +49,7 @@ export function App() {
     return () => removeEventListener('keydown', onKey);
   }, []);
 
-  if (!settings.onboarded) return <Onboarding />;
+  if (!settings.onboarded && sheet.value !== 'premium') return <Onboarding />;
 
   const r = route.value;
   return (
@@ -59,6 +63,7 @@ export function App() {
       {sheet.value === 'text' && <TextSheet />}
       {sheet.value === 'speed' && <SpeedSheet />}
       {sheet.value === 'sleep' && <SleepSheet />}
+      {sheet.value === 'premium' && <PremiumSheet />}
       <Toasts />
     </>
   );

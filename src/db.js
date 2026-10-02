@@ -216,6 +216,60 @@ async function confirmPayment(reference) {
   return data;
 }
 
+async function getPaymentByReference(reference) {
+  const { data, error } = await supabase.from('payments').select('*').eq('reference', reference).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * « Réserve » le traitement d'un paiement : renvoie la ligne si c'est le premier appel,
+ * null si le paiement a déjà été traité (protège contre les doubles activations).
+ */
+async function claimPaymentProcessing(reference) {
+  const { data, error } = await supabase
+    .from('payments')
+    .update({ processed_at: new Date().toISOString(), status: 'paid', paid_at: new Date().toISOString() })
+    .eq('reference', reference)
+    .is('processed_at', null)
+    .select();
+  if (error) throw error;
+  return data?.[0] ?? null;
+}
+
+async function releasePaymentProcessing(reference) {
+  await supabase.from('payments').update({ processed_at: null }).eq('reference', reference);
+}
+
+async function setPaymentMetadata(reference, metadata) {
+  const { error } = await supabase.from('payments').update({ metadata }).eq('reference', reference);
+  if (error) throw error;
+}
+
+// ─── KALARA (licences Premium) ───────────────────────────────────────────────
+
+async function getKalaraLicenseByPhone(phone) {
+  const { data, error } = await supabase.from('kalara_licenses').select('*').eq('phone', phone).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+async function getKalaraLicenseByCode(code) {
+  const { data, error } = await supabase.from('kalara_licenses').select('*').eq('code', code).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+async function upsertKalaraLicense({ phone, code, plan, expiresAt }) {
+  const { data, error } = await supabase
+    .from('kalara_licenses')
+    .upsert({ phone, code, plan, expires_at: expiresAt.toISOString(), updated_at: new Date().toISOString() }, { onConflict: 'phone' })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 async function getPendingPayment(whatsappNumber, type) {
   const { data, error } = await supabase
     .from('payments')
@@ -287,6 +341,13 @@ module.exports = {
   getApplicationByCandidate,
   createPayment,
   confirmPayment,
+  getPaymentByReference,
+  claimPaymentProcessing,
+  releasePaymentProcessing,
+  setPaymentMetadata,
+  getKalaraLicenseByPhone,
+  getKalaraLicenseByCode,
+  upsertKalaraLicense,
   getPendingPayment,
   getDashboardStats,
   getRecentOffers,

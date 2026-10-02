@@ -20,16 +20,6 @@ export interface CatalogVoice {
 export const CATALOG: CatalogVoice[] = [
   // ——— Français ———
   {
-    id: 'fr-siwis',
-    name: 'Siwis',
-    lang: 'fr',
-    gender: 'f',
-    accent: 'Français standard',
-    description: 'Voix féminine claire et posée, idéale pour les romans et les essais.',
-    model: 'fr_FR-siwis-medium',
-    sizeMb: 63,
-  },
-  {
     id: 'fr-jessica',
     name: 'Jessica',
     lang: 'fr',
@@ -50,6 +40,16 @@ export const CATALOG: CatalogVoice[] = [
     model: 'fr_FR-upmc-medium',
     speaker: 1,
     sizeMb: 77,
+  },
+  {
+    id: 'fr-siwis',
+    name: 'Siwis',
+    lang: 'fr',
+    gender: 'f',
+    accent: 'Français standard',
+    description: 'Voix féminine claire et posée, idéale pour les romans et les essais.',
+    model: 'fr_FR-siwis-medium',
+    sizeMb: 63,
   },
   {
     id: 'fr-tom',

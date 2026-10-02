@@ -24,7 +24,8 @@ export interface PiperVoiceInfo {
 export const ALL_VOICES = PIPER_VOICES as PiperVoiceInfo[];
 const KNOWN = new Set([...ALL_VOICES.map((v) => v.id), ...CATALOG.map((c) => c.model)]);
 
-export const DEFAULT_VOICE = CATALOG[0].id;
+/** Voix par défaut : une des deux voix gratuites. */
+export const DEFAULT_VOICE = 'fr-jessica';
 
 /** `key` est soit l'id d'une voix du catalogue, soit `modèle` ou `modèle#locuteur`. */
 export function resolveVoice(key: string): VoiceRef {
