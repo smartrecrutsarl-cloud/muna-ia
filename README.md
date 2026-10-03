@@ -1,6 +1,5 @@
 # 🤖 Muna IA — Backend
 
-> ℹ️ Le dossier [`kalara/`](kalara/) contient **Kalara**, un produit distinct (lecteur audio de documents) avec sa propre application et sa propre API. Il ne partage ni code ni base de données avec Muna IA.
 
 > Assistant recrutement intelligent via WhatsApp · Cameroun & CEMAC
 
