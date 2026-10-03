@@ -1,7 +1,7 @@
 // Génère la paire de clés qui signe les licences Kalara Premium.
-//   node scripts/kalara-keys.js
-// → clé privée : variable KALARA_LICENSE_PRIVATE_KEY du backend (Railway), à garder secrète
-// → clé publique : constante LICENSE_PUBLIC_KEY de lecteur-audio/src/premium.ts
+//   npm run keys
+// → clé privée : variable KALARA_LICENSE_PRIVATE_KEY de l'API (Railway), à garder secrète
+// → clé publique : constante LICENSE_PUBLIC_KEY de kalara/app/src/premium.ts
 const crypto = require('crypto');
 
 const { privateKey, publicKey } = crypto.generateKeyPairSync('ec', { namedCurve: 'P-256' });

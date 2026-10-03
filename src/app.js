@@ -6,7 +6,6 @@ const path = require('path');
 const watiWebhook = require('./routes/wati-webhook');
 const cinetpayWebhook = require('./routes/cinetpay-webhook');
 const dashboard = require('./routes/dashboard');
-const kalara = require('./routes/kalara');
 
 const app = express();
 
@@ -22,7 +21,6 @@ app.use(express.static(path.join(__dirname, '../public')));
 // ── Routes ─────────────────────────────────────────────────────────────────
 app.use('/webhook/wati', watiWebhook);
 app.use('/webhook/cinetpay', cinetpayWebhook);
-app.use('/api/kalara', kalara);
 app.use('/', dashboard);
 
 // ── 404 ────────────────────────────────────────────────────────────────────

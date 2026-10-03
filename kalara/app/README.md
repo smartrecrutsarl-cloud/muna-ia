@@ -26,17 +26,11 @@ documents **Word (.docx)** et livres **EPUB** en livres audio, lus par des voix 
 
 ### Activer le paiement
 
-1. **Supabase** → SQL Editor : exécuter `supabase-kalara.sql` (à la racine du dépôt).
-2. **Railway** (backend Muna IA) → Variables :
-   - `KALARA_LICENSE_PRIVATE_KEY` : clé privée qui signe les licences (générée avec `node scripts/kalara-keys.js` ;
-     la clé publique correspondante est dans `src/premium.ts`) ;
-   - `KALARA_APP_URL` : adresse de l'application (ex. `https://lecteur-audio-muna.netlify.app`) ;
-   - `APP_URL` : adresse publique du backend (sert d'adresse de retour après paiement) ;
-   - `CINETPAY_API_KEY`, `CINETPAY_SITE_ID`, `CINETPAY_NOTIFY_URL` (déjà utilisés par Muna IA).
-3. Construire l'application avec l'adresse de l'API :
-   ```bash
-   VITE_KALARA_API=https://<votre-backend>.up.railway.app/api/kalara npm run build
-   ```
+Le paiement passe par l'**API Kalara** (`../api`, voir [`../README.md`](../README.md)). Construire l'application avec son adresse :
+
+```bash
+VITE_KALARA_API=https://<api-kalara>.up.railway.app/api/kalara npm run build
+```
 
 ## Ce que l'on obtient
 
@@ -71,7 +65,7 @@ documents **Word (.docx)** et livres **EPUB** en livres audio, lus par des voix 
 ## Lancer en local
 
 ```bash
-cd lecteur-audio
+cd kalara/app
 npm install
 npm run dev        # développement : http://localhost:5173
 npm run build      # version de production dans dist/

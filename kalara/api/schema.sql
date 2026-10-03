@@ -1,7 +1,7 @@
--- Kalara Premium — à exécuter dans Supabase → SQL Editor (une seule fois)
+-- Kalara — schéma de la base Supabase du projet Kalara (SQL Editor → Run, une seule fois)
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Table des paiements (déjà présente si le schéma Muna IA a été installé ; créée sinon)
+-- Paiements CinetPay
 CREATE TABLE IF NOT EXISTS payments (
   id               UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   whatsapp_number  TEXT NOT NULL,

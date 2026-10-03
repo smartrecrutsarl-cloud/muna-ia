@@ -1,6 +1,6 @@
 # 🤖 Muna IA — Backend
 
-> 🎧 Ce dépôt contient aussi **[Kalara](lecteur-audio/)** : l'application qui raconte vos PDF, Word et EPUB avec des voix naturelles, hors ligne. Son abonnement Premium (pass Mobile Money) est servi par ce backend : voir « API Kalara » plus bas.
+> ℹ️ Le dossier [`kalara/`](kalara/) contient **Kalara**, un produit distinct (lecteur audio de documents) avec sa propre application et sa propre API. Il ne partage ni code ni base de données avec Muna IA.
 
 > Assistant recrutement intelligent via WhatsApp · Cameroun & CEMAC
 
@@ -199,34 +199,3 @@ public/
 
 *Muna IA — Juin 2026*
 
-
----
-
-## 🎧 API Kalara (abonnement Premium du lecteur audio)
-
-Routes publiques (CORS ouvert), montées sur `/api/kalara` :
-
-| Méthode | Route | Rôle |
-|---|---|---|
-| GET | `/plans` | Formules : 7 jours (500 FCFA), 1 mois (1 500 FCFA), 1 an (12 000 FCFA) |
-| POST | `/checkout` `{ plan, phone }` | Crée le paiement CinetPay (Mobile Money) → `{ paymentUrl, transactionId }` |
-| GET/POST | `/return` | Retour depuis CinetPay → redirige vers l'application (`?payment=…`) |
-| GET | `/license/:transactionId` | Vérifie le paiement **auprès de CinetPay** et renvoie la licence signée |
-| POST | `/restore` `{ code }` | Restaure un abonnement avec le code `KAL-XXXX-XXXX` |
-
-- Le webhook `/webhook/cinetpay` reconnaît les transactions `KAL-…` et active la licence.
-- L'activation est **idempotente** (colonne `payments.processed_at`) : webhook et application peuvent la
-  déclencher en même temps sans double prolongation.
-- Un nouveau pass acheté avec le même numéro **prolonge** la licence existante (même code).
-- Le code est aussi envoyé par WhatsApp (au mieux : WATI n'accepte les messages de session que si
-  l'utilisateur a écrit dans les 24 h) ; il est toujours affiché dans l'application.
-
-Variables d'environnement supplémentaires :
-
-```
-KALARA_LICENSE_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\n…\n-----END PRIVATE KEY-----
-KALARA_APP_URL=https://lecteur-audio-muna.netlify.app
-```
-
-Base de données : exécuter `supabase-kalara.sql` dans Supabase. Nouvelle paire de clés : `node scripts/kalara-keys.js`
-(mettre alors la clé publique dans `lecteur-audio/src/premium.ts`).

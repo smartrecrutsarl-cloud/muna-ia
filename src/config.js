@@ -40,19 +40,6 @@ module.exports = {
     abonnementStarter: 15000,
   },
 
-  // Kalara (lecteur audio) : abonnement Premium par pass Mobile Money
-  kalara: {
-    // Adresse publique de l'application (redirection après paiement)
-    appUrl: (process.env.KALARA_APP_URL || 'https://lecteur-audio-muna.netlify.app').replace(/\/$/, ''),
-    // Clé privée ECDSA P-256 (PEM) qui signe les licences ; « \n » accepté pour Railway
-    licensePrivateKey: (process.env.KALARA_LICENSE_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
-    plans: {
-      week: { amount: 500, days: 7, label: 'Kalara Premium — pass 7 jours' },
-      month: { amount: 1500, days: 30, label: 'Kalara Premium — pass 1 mois' },
-      year: { amount: 12000, days: 365, label: 'Kalara Premium — pass 1 an' },
-    },
-  },
-
   // Délai avant scoring automatique (en millisecondes)
   scoringDelay: 48 * 60 * 60 * 1000, // 48 heures
 };

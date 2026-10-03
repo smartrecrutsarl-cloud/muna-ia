@@ -30,15 +30,6 @@ router.post('/', async (req, res) => {
 
     console.log(`[CINETPAY] Transaction ${transactionId} — Status: ${status}`);
 
-    // Kalara : reconnu par la référence en base ; l'activation vérifie elle-même
-    // le paiement auprès de CinetPay (on ne se fie pas au contenu de la notification).
-    if (String(transactionId || '').startsWith('KAL-')) {
-      const { activateFromPayment } = require('../services/kalara');
-      const activation = await activateFromPayment(transactionId);
-      console.log(`[CINETPAY] Kalara ${transactionId} → ${activation.status}`);
-      return;
-    }
-
     // Seuls les paiements acceptés sont traités
     if (status !== 'ACCEPTED' || result !== '00') {
       console.log(`[CINETPAY] Paiement refusé ou en attente : ${status}`);
