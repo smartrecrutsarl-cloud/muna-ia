@@ -1,6 +1,5 @@
 # 🤖 Muna IA — Backend
 
-
 > Assistant recrutement intelligent via WhatsApp · Cameroun & CEMAC
 
 ---
@@ -197,4 +196,3 @@ public/
 ---
 
 *Muna IA — Juin 2026*
-
